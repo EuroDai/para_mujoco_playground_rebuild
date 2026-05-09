@@ -31,6 +31,21 @@ class ParaNontendonFR3Grasp(mjx_env.MjxEnv):
         pass
 
     def _get_obs(self, data: mjx.Data, info: Dict[str, Any]) -> jax.Array:
-        
-        return obs
+        state = jp.concatenate([
 
+        ])
+
+        privileged_state = jp.concatenate([
+            state,
+        ])
+
+        return {
+            "state": state,
+            "privileged_state": privileged_state,
+        }
+
+    def _reward_fingers_to_object(self, data: mjx.Data) -> jax.Array:
+        pass
+
+    def _reward_good_finger_contact(self, data: mjx.Data) -> jax.Array:
+        pass
