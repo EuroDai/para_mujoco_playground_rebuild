@@ -22,6 +22,7 @@ from mujoco import mjx
 from mujoco_playground._src import dm_control_suite
 from mujoco_playground._src import locomotion
 from mujoco_playground._src import manipulation
+from mujoco_playground._src import parahand
 from mujoco_playground._src import mjx_env
 
 DomainRandomizer = Optional[
@@ -31,7 +32,7 @@ DomainRandomizer = Optional[
 
 # A tuple containing all available environment names across all suites.
 ALL_ENVS = (
-    dm_control_suite.ALL_ENVS + locomotion.ALL_ENVS + manipulation.ALL_ENVS
+    dm_control_suite.ALL_ENVS + locomotion.ALL_ENVS + manipulation.ALL_ENVS + parahand.ALL_ENVS
 )
 
 

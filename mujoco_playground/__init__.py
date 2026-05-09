@@ -16,6 +16,7 @@
 from mujoco_playground._src import dm_control_suite
 from mujoco_playground._src import locomotion
 from mujoco_playground._src import manipulation
+from mujoco_playground._src import parahand
 from mujoco_playground._src import registry
 from mujoco_playground._src import wrapper
 from mujoco_playground._src import wrapper_torch
@@ -31,6 +32,7 @@ __all__ = [
     "dm_control_suite",
     "locomotion",
     "manipulation",
+    "parahand",
     "MjxEnv",
     "registry",
     "render_array",
