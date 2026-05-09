@@ -1,0 +1,123 @@
+_wandb:
+    value:
+        cli_version: 0.26.1
+        e:
+            cshb32kxmlxxhclqp3xx44fgqv0pcd6b:
+                args:
+                    - --env_name=PandaPickCubeCartesian
+                    - --impl=jax
+                    - --use_wandb=True
+                    - --num_timesteps=5000000
+                    - --log_training_metrics=True
+                    - --training_metrics_steps=100000
+                codePath: learning/train_jax_ppo.py
+                codePathLocal: learning/train_jax_ppo.py
+                cpu_count: 32
+                cpu_count_logical: 64
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "156891586560"
+                        used: "86796275712"
+                email: daizy25@mails.tsinghua.edu.cn
+                executable: /home/rvsa/miniconda3/envs/mj_playground/bin/python
+                git:
+                    commit: 2d9013457f15b395af9d7836946ba297441dcad3
+                    remote: https://github.com/EuroDai/mujoco_playground.git
+                gpu: NVIDIA GeForce RTX 5090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Blackwell
+                      cudaCores: 21760
+                      memoryTotal: "34190917632"
+                      name: NVIDIA GeForce RTX 5090
+                      uuid: GPU-cece3cee-966b-85d1-812e-10c6b5179aec
+                host: rvsaGW
+                memory:
+                    total: "540274085888"
+                os: Linux-6.8.0-111-generic-x86_64-with-glibc2.35
+                program: /media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py
+                python: CPython 3.12.13
+                root: /media/rvsa/extdata/daizy/mujoco_playground
+                startedAt: "2026-05-09T10:39:46.492083Z"
+                writerId: cshb32kxmlxxhclqp3xx44fgqv0pcd6b
+        m: []
+        python_version: 3.12.13
+        t:
+            "1":
+                - 1
+                - 12
+                - 45
+            "2":
+                - 1
+                - 12
+                - 45
+            "3":
+                - 13
+                - 61
+            "4": 3.12.13
+            "5": 0.26.1
+            "12": 0.26.1
+            "13": linux-x86_64
+action_history_length:
+    value: 1
+action_repeat:
+    value: 1
+action_scale:
+    value: 0.005
+box_init_range:
+    value: 0.05
+ctrl_dt:
+    value: 0.05
+env_name:
+    value: PandaPickCubeCartesian
+episode_length:
+    value: 200
+impl:
+    value: jax
+naccdmax:
+    value: 49152
+naconmax:
+    value: 49152
+njmax:
+    value: 128
+obs_noise:
+    value:
+        brightness:
+            - 1
+            - 1
+reward_config:
+    value:
+        action_rate: -0.0005
+        lifted_reward: 0.5
+        no_soln_reward: -0.01
+        reward_scales:
+            box_target: 8
+            gripper_box: 4
+            no_box_collision: 0.05
+            no_floor_collision: 0.25
+            robot_target_qpos: 0
+        success_reward: 2
+sim_dt:
+    value: 0.005
+success_threshold:
+    value: 0.05
+vision:
+    value: false
+vision_config:
+    value:
+        cam_active: null
+        cam_res:
+            - 64
+            - 64
+        enabled_geom_groups:
+            - 0
+            - 1
+            - 2
+        nworld: 1024
+        render_depth:
+            - false
+        render_rgb:
+            - true
+        use_shadows: false
+        use_textures: false
