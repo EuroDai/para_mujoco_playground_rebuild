@@ -1,0 +1,116 @@
+_wandb:
+    value:
+        cli_version: 0.26.1
+        e:
+            yxlwcc53i30nfip4gerfzdfvdd9qaf4b:
+                args:
+                    - --env_name=LeapCubeReorient
+                    - --impl=jax
+                    - --use_wandb=True
+                codePath: learning/train_jax_ppo.py
+                codePathLocal: learning/train_jax_ppo.py
+                cpu_count: 32
+                cpu_count_logical: 64
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "156891586560"
+                        used: "87237165056"
+                email: daizy25@mails.tsinghua.edu.cn
+                executable: /home/rvsa/miniconda3/envs/mj_playground/bin/python
+                git:
+                    commit: 6a35b2150bb37ce859b7a1c32905a4b9c69d35c9
+                    remote: https://github.com/EuroDai/mujoco_playground.git
+                gpu: NVIDIA GeForce RTX 5090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Blackwell
+                      cudaCores: 21760
+                      memoryTotal: "34190917632"
+                      name: NVIDIA GeForce RTX 5090
+                      uuid: GPU-cece3cee-966b-85d1-812e-10c6b5179aec
+                host: rvsaGW
+                memory:
+                    total: "540274085888"
+                os: Linux-6.8.0-111-generic-x86_64-with-glibc2.35
+                program: /media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py
+                python: CPython 3.12.13
+                root: /media/rvsa/extdata/daizy/mujoco_playground
+                startedAt: "2026-05-10T02:16:37.713317Z"
+                writerId: yxlwcc53i30nfip4gerfzdfvdd9qaf4b
+        m: []
+        python_version: 3.12.13
+        t:
+            "1":
+                - 1
+                - 12
+                - 45
+            "2":
+                - 1
+                - 12
+                - 45
+            "3":
+                - 13
+                - 61
+            "4": 3.12.13
+            "5": 0.26.1
+            "12": 0.26.1
+            "13": linux-x86_64
+action_repeat:
+    value: 1
+action_scale:
+    value: 0.5
+ctrl_dt:
+    value: 0.05
+ema_alpha:
+    value: 1
+env_name:
+    value: LeapCubeReorient
+episode_length:
+    value: 1000
+history_len:
+    value: 1
+impl:
+    value: jax
+naconmax:
+    value: 245760
+njmax:
+    value: 160
+obs_noise:
+    value:
+        level: 1
+        random_ori_injection_prob: 0
+        scales:
+            cube_ori: 0.1
+            cube_pos: 0.02
+            joint_pos: 0.05
+pert_config:
+    value:
+        angular_velocity_pert:
+            - 0
+            - 0.5
+        enable: false
+        linear_velocity_pert:
+            - 0
+            - 3
+        pert_duration_steps:
+            - 1
+            - 100
+        pert_wait_steps:
+            - 60
+            - 150
+reward_config:
+    value:
+        scales:
+            action_rate: -0.001
+            energy: -0.001
+            hand_pose: -0.5
+            joint_vel: 0
+            orientation: 5
+            position: 0.5
+            termination: -100
+        success_reward: 100
+sim_dt:
+    value: 0.01
+success_threshold:
+    value: 0.1

@@ -3,8 +3,6 @@
 from typing import Any, Dict, Optional, Union
 
 from etils import epath
-import jax
-import jax.numpy as jp
 from ml_collections import config_dict
 import mujoco
 from mujoco import mjx
@@ -12,11 +10,14 @@ from mujoco import mjx
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
 
-
 def get_assets() -> Dict[str, bytes]:
-  assets = {}
-  path = mjx_env.MENAGERIE_PATH / "para_nontendon_fr3"
-  mjx_env.update_assets(assets, path / "assets")
+  """Loads XML assets for the para_nontendon_fr3 environments.
+
+  The XML at xmls/para_nontendon_fr3.xml is self-contained (no external mesh
+  or texture references), so we only need to expose XML files in the assets
+  dict for `mujoco.MjModel.from_xml_string`.
+  """
+  assets: Dict[str, bytes] = {}
   mjx_env.update_assets(assets, consts.ROOT_PATH / "xmls", "*.xml")
   return assets
 
@@ -33,6 +34,7 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
         epath.Path(xml_path).read_text(), assets=self._model_assets
     )
     self._mj_model.opt.timestep = self._config.sim_dt
+    self._mj_model.opt.ccd_iterations = 10
 
     self._mj_model.vis.global_.offwidth = 3840
     self._mj_model.vis.global_.offheight = 2160

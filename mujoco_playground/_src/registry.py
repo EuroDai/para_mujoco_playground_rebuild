@@ -43,6 +43,8 @@ def get_default_config(env_name: str):
     return locomotion.get_default_config(env_name)
   elif env_name in dm_control_suite.ALL_ENVS:
     return dm_control_suite.get_default_config(env_name)
+  elif env_name in parahand.ALL_ENVS:
+    return parahand.get_default_config(env_name)
 
   raise ValueError(f"Env '{env_name}' not found in default configs.")
 
@@ -58,7 +60,8 @@ def load(
     return locomotion.load(env_name, config, config_overrides)
   elif env_name in dm_control_suite.ALL_ENVS:
     return dm_control_suite.load(env_name, config, config_overrides)
-
+  elif env_name in parahand.ALL_ENVS:
+    return parahand.load(env_name, config, config_overrides)
   raise ValueError(f"Env '{env_name}' not found. Available envs: {ALL_ENVS}")
 
 
@@ -68,5 +71,9 @@ def get_domain_randomizer(env_name: str) -> Optional[DomainRandomizer]:
 
   if env_name in locomotion.ALL_ENVS:
     return locomotion.get_domain_randomizer(env_name)
+
+  if env_name in parahand.ALL_ENVS:
+    # return parahand.get_domain_randomizer(env_name)
+    pass
 
   return None

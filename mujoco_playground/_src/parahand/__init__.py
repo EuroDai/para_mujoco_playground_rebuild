@@ -24,11 +24,11 @@ from mujoco_playground._src.parahand.para_nontendon_fr3 import grasp as parahand
 
 
 _envs = {
-    "ParaNontendonArmGrasp": parahand_nontendon_fr3_grasp.ParaNontendonFR3Grasp,
+    "ParaNontendonFR3Grasp": parahand_nontendon_fr3_grasp.ParaNontendonFR3Grasp,
 }
 
 _cfgs = {
-    "ParaNontendonArmGrasp": parahand_nontendon_fr3_grasp.default_config,
+    "ParaNontendonFR3Grasp": parahand_nontendon_fr3_grasp.default_config,
 }
 
 _randomizer = {

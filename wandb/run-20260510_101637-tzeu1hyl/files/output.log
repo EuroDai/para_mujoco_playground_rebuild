@@ -1,0 +1,29 @@
+No checkpoint path provided, not restoring from checkpoint
+Checkpoint path: /media/rvsa/extdata/daizy/mujoco_playground/logs/LeapCubeReorient-20260510-101637/checkpoints
+0: reward=-8.432
+10813440: reward=135.424
+21626880: reward=159.188
+32440320: reward=175.347
+43253760: reward=171.786
+54067200: reward=181.276
+64880640: reward=196.407
+75694080: reward=200.649
+86507520: reward=236.877
+97320960: reward=248.120
+108134400: reward=248.885
+118947840: reward=316.015
+129761280: reward=330.068
+140574720: reward=318.927
+151388160: reward=378.571
+162201600: reward=369.551
+173015040: reward=384.535
+183828480: reward=397.130
+194641920: reward=412.337
+205455360: reward=381.775
+Done training.
+Time to JIT compile: 36.62959537500865
+Time to train: 1624.5523488390027
+Starting inference...
+FPS for rendering: 10.0
+100%|█████████████████████████████████████████████████████████████████████████████████| 500/500 [00:00<00:00, 581.15it/s]
+Rollout video saved as '/media/rvsa/extdata/daizy/mujoco_playground/logs/LeapCubeReorient-20260510-101637/rollout0.mp4'.
