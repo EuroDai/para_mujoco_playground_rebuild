@@ -3,7 +3,7 @@
     <compiler angle="radian" />
     <option integrator="implicitfast" />
     <default>
-        <geom condim='4' margin="1e-3" solref=".01 1" solimp=".99 .99 .01" contype="1" conaffinity="1"/>
+        <geom condim='4' margin="0.0" solref=".01 1" solimp=".99 .99 .01" contype="1" conaffinity="1"/>
         <default class="cube">
             <geom friction="1.0 0.1 0.002" contype="2" conaffinity="7" condim="4" />
         </default>

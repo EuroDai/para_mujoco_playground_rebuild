@@ -39,7 +39,7 @@ def brax_ppo_config(
       num_resets_per_eval=10,
   )
   if env_name == "ParaNontendonFR3Grasp":
-    rl_config.num_timesteps = 200_000_000
+    rl_config.num_timesteps = 5_000_000
     rl_config.num_evals = 20
     rl_config.num_minibatches = 32
     rl_config.unroll_length = 40
@@ -47,7 +47,7 @@ def brax_ppo_config(
     rl_config.discounting = 0.99
     rl_config.learning_rate = 3e-4
     rl_config.entropy_cost = 1e-2
-    rl_config.num_envs = 8192
+    rl_config.num_envs = 1024
     rl_config.batch_size = 256
   else:
     raise ValueError(f"Unsupported env: {env_name}")

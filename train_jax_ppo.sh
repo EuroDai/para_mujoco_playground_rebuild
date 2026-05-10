@@ -1,4 +1,3 @@
 python learning/train_jax_ppo.py \
-  --env_name=LeapCubeReorient \
-  --impl=jax \
+  --env_name=ParaNontendonFR3Grasp \
   --use_wandb=True

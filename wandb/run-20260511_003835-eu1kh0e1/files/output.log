@@ -1,0 +1,49 @@
+No checkpoint path provided, not restoring from checkpoint
+Checkpoint path: /media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260511-003834/checkpoints
+Traceback (most recent call last):
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 571, in <module>
+    run()
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 567, in run
+    app.run(main)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 468, in main
+    make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/agents/ppo/train.py", line 804, in train
+    metrics = evaluator.run_evaluation(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/acting.py", line 146, in run_evaluation
+    eval_state = self._generate_eval_unroll(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/acting.py", line 123, in generate_eval_unroll
+    return generate_unroll(
+           ^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/acting.py", line 73, in generate_unroll
+    (final_state, _), data = jax.lax.scan(
+                             ^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/acting.py", line 67, in f
+    nstate, transition = actor_step(
+                         ^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/acting.py", line 42, in actor_step
+    nstate = env.step(env_state, actions)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/envs/wrappers/training.py", line 200, in step
+    nstate = self.env.step(state, action)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/mujoco_playground/_src/wrapper.py", line 178, in step
+    state = self.env.step(state, action)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/envs/wrappers/training.py", line 103, in step
+    state, rewards = jax.lax.scan(f, state, (), self.action_repeat)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: scan body function carry input and carry output must have the same pytree structure, but they differ:
+
+The input carry component state.metrics is a <class 'dict'> with 1 child but the corresponding component of the carry output is a <class 'dict'> with 0 child, so the numbers of children do not match, with the symmetric difference of key sets: {'reward'}.
+
+Revise the function so that the carry output has the same pytree structure as the carry input.
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.

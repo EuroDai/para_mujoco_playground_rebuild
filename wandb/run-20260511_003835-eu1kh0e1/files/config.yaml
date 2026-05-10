@@ -1,0 +1,76 @@
+_wandb:
+    value:
+        cli_version: 0.26.1
+        e:
+            7sfnd2aq7e2db3j03qiz874tessdmudr:
+                args:
+                    - --env_name=ParaNontendonFR3Grasp
+                    - --use_wandb=True
+                codePath: learning/train_jax_ppo.py
+                codePathLocal: learning/train_jax_ppo.py
+                cpu_count: 32
+                cpu_count_logical: 64
+                cudaVersion: "13.0"
+                disk:
+                    /:
+                        total: "156891586560"
+                        used: "87367188480"
+                email: daizy25@mails.tsinghua.edu.cn
+                executable: /home/rvsa/miniconda3/envs/mj_playground/bin/python
+                git:
+                    commit: f9b533bdc577487ace187e0fb52cff9d83d8e3f2
+                    remote: https://github.com/EuroDai/mujoco_playground.git
+                gpu: NVIDIA GeForce RTX 5090
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Blackwell
+                      cudaCores: 21760
+                      memoryTotal: "34190917632"
+                      name: NVIDIA GeForce RTX 5090
+                      uuid: GPU-cece3cee-966b-85d1-812e-10c6b5179aec
+                host: rvsaGW
+                memory:
+                    total: "540274085888"
+                os: Linux-6.8.0-111-generic-x86_64-with-glibc2.35
+                program: /media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py
+                python: CPython 3.12.13
+                root: /media/rvsa/extdata/daizy/mujoco_playground
+                startedAt: "2026-05-10T16:38:35.081793Z"
+                writerId: 7sfnd2aq7e2db3j03qiz874tessdmudr
+        m: []
+        python_version: 3.12.13
+        t:
+            "1":
+                - 1
+                - 12
+                - 45
+            "2":
+                - 1
+                - 12
+                - 45
+            "3":
+                - 13
+            "4": 3.12.13
+            "5": 0.26.1
+            "12": 0.26.1
+            "13": linux-x86_64
+action_repeat:
+    value: 1
+action_scale:
+    value: 0.05
+ctrl_dt:
+    value: 0.02
+env_name:
+    value: ParaNontendonFR3Grasp
+episode_length:
+    value: 256
+impl:
+    value: jax
+naccdmax:
+    value: 245760
+naconmax:
+    value: 245760
+njmax:
+    value: 160
+sim_dt:
+    value: 0.002
