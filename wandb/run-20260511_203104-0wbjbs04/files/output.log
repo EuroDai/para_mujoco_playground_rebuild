@@ -1,0 +1,85 @@
+No checkpoint path provided, not restoring from checkpoint
+Checkpoint path: /media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260511-203103/checkpoints
+Module mujoco.mjx.warp.ffi 98d2031 load on device 'cuda:0' took 0.39 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.smooth 26bbc02 load on device 'cuda:0' took 5.08 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.collision_driver 88f7770 load on device 'cuda:0' took 0.38 ms  (cached)
+Module _nxn_broadphase__locals__kernel_c763f4cb c763f4c load on device 'cuda:0' took 0.37 ms  (cached)
+Module ccd_kernel_builder__locals__ccd_kernel_a7374e98 a7374e9 load on device 'cuda:0' took 1.32 ms  (cached)
+Module _primitive_narrowphase__locals__primitive_narrowphase_228bfa6b 228bfa6 load on device 'cuda:0' took 0.78 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.constraint c567367 load on device 'cuda:0' took 1.39 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.sensor 18a78e5 load on device 'cuda:0' took 1.75 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.forward 16fbac8 load on device 'cuda:0' took 1.04 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.passive 8bfe11c load on device 'cuda:0' took 0.68 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.forward 8f5355c load on device 'cuda:0' took 1.01 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.support dd3f924 load on device 'cuda:0' took 0.37 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_98799697 3154237 load on device 'cuda:0' took 25.18 ms  (cached)
+Module _tile_cholesky_factorize_solve__locals__cholesky_factorize_solve_b2744b1b e16af87 load on device 'cuda:0' took 24.40 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.solver b116efb load on device 'cuda:0' took 1.35 ms  (cached)
+Module solve_init_jaref__locals__kernel_feadd581 feadd58 load on device 'cuda:0' took 0.42 ms  (cached)
+Module mul_m_dense__locals___mul_m_dense_e34139c1 e34139c load on device 'cuda:0' took 0.44 ms  (cached)
+Module update_constraint_efc__locals__kernel_81015163 8101516 load on device 'cuda:0' took 0.31 ms  (cached)
+Module update_constraint_gauss_cost__locals__kernel_6370b491 6370b49 load on device 'cuda:0' took 0.35 ms  (cached)
+Module update_gradient_JTDAJ_dense_tiled__locals__kernel_4ac60265 2bdfcbf load on device 'cuda:0' took 0.55 ms  (cached)
+Module update_gradient_cholesky__locals__kernel_c54e7710 b74aeaf load on device 'cuda:0' took 25.87 ms  (cached)
+Module linesearch_iterative__locals__kernel_43e78952 19a6145 load on device 'cuda:0' took 0.45 ms  (cached)
+Module update_constraint_efc__locals__kernel_25737258 2573725 load on device 'cuda:0' took 0.30 ms  (cached)
+Module mujoco.mjx.third_party.mujoco_warp._src.derivative 7ba27fe load on device 'cuda:0' took 0.47 ms  (cached)
+0: reward=-0.270
+Collected rscope rollouts with reward 0.083 +- 0.000
+Collected rscope rollouts with reward 1.783 +- 0.000
+3276800: reward=1.218
+Collected rscope rollouts with reward 2.192 +- 0.000
+6553600: reward=1.818
+Collected rscope rollouts with reward 2.489 +- 0.000
+9830400: reward=2.164
+Collected rscope rollouts with reward 2.580 +- 0.000
+13107200: reward=2.279
+Collected rscope rollouts with reward 2.639 +- 0.000
+16384000: reward=2.332
+Collected rscope rollouts with reward 2.265 +- 0.000
+19660800: reward=2.167
+Collected rscope rollouts with reward 2.130 +- 0.000
+22937600: reward=2.015
+Collected rscope rollouts with reward 2.387 +- 0.000
+26214400: reward=1.926
+Collected rscope rollouts with reward 2.429 +- 0.000
+29491200: reward=1.923
+Collected rscope rollouts with reward 2.416 +- 0.000
+32768000: reward=1.951
+Collected rscope rollouts with reward 2.484 +- 0.000
+36044800: reward=1.990
+Collected rscope rollouts with reward 2.457 +- 0.000
+39321600: reward=2.067
+Collected rscope rollouts with reward nan +- nan
+42598400: reward=nan
+Collected rscope rollouts with reward nan +- nan
+45875200: reward=nan
+Collected rscope rollouts with reward nan +- nan
+49152000: reward=nan
+Collected rscope rollouts with reward nan +- nan
+52428800: reward=nan
+Collected rscope rollouts with reward nan +- nan
+55705600: reward=nan
+Collected rscope rollouts with reward nan +- nan
+58982400: reward=nan
+Collected rscope rollouts with reward nan +- nan
+62259200: reward=nan
+Traceback (most recent call last):
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 571, in <module>
+    run()
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 567, in run
+    app.run(main)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 468, in main
+    make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/agents/ppo/train.py", line 884, in train
+    pmap.assert_is_replicated(training_state)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/pmap.py", line 70, in assert_is_replicated
+    assert jax.pmap(f, axis_name='i')(x)[0], debug
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^
+AssertionError: None

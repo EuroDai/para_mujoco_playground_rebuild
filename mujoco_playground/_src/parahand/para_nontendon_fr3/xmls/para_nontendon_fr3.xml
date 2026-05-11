@@ -83,6 +83,11 @@
                 0 0 0 0" />
     </keyframe>
     <worldbody>
+        <camera name="default" pos="-0.988 -1.151 0.478" xyaxes="0.813 -0.582 0.000 0.116 0.162 0.980"/>
+        <camera name="cam1" pos="-0.429 -1.169 0.358" xyaxes="0.984 -0.178 -0.000 0.028 0.154 0.988"/>
+        <camera name="cam_close" pos="-0.139 -0.614 0.217" xyaxes="0.830 0.557 -0.000 -0.218 0.324 0.921"/>
+
+
         <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" friction="0.8 0.05 0.05"/>
         <site name="target" pos="-0.44 -0.18 0.18" size="0.002" rgba="1 0 0 1" />
         

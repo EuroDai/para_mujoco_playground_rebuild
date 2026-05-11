@@ -1,0 +1,45 @@
+No checkpoint path provided, not restoring from checkpoint
+Checkpoint path: /media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260511-192520/checkpoints
+Traceback (most recent call last):
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 571, in <module>
+    run()
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 567, in run
+    app.run(main)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 367, in run
+    _run_main(main, args)
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/absl/app.py", line 312, in _run_main
+    sys.exit(main(argv))
+             ^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/learning/train_jax_ppo.py", line 468, in main
+    make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/training/agents/ppo/train.py", line 417, in train
+    env_state = reset_fn_(key_envs)
+                ^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/jax/_src/pmap.py", line 320, in wrapped
+    out = jitted_f(*dyn_args_flat)
+          ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/mujoco_playground/_src/wrapper.py", line 149, in reset
+    state = self.env.reset(key)
+            ^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/envs/wrappers/training.py", line 84, in reset
+    state = self.env.reset(rng)
+            ^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/brax/envs/wrappers/training.py", line 69, in reset
+    return jax.vmap(self.env.reset)(rng)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/media/rvsa/extdata/daizy/mujoco_playground/mujoco_playground/_src/parahand/para_nontendon_fr3/grasp.py", line 71, in reset
+    q_robot = jp.clip(self._default_pose + 0.05 * q_noise, self._lowers, self._uppers)
+                      ~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/jax/_src/numpy/array_methods.py", line 725, in _operator_add
+    return ufuncs.add(self, cast(ArrayLike, other))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/jax/_src/numpy/ufunc_api.py", line 182, in __call__
+    return call(*args)
+           ^^^^^^^^^^^
+  File "/home/rvsa/miniconda3/envs/mj_playground/lib/python3.12/site-packages/jax/_src/numpy/ufuncs.py", line 1238, in add
+    out = lax.add(x, y)
+          ^^^^^^^^^^^^^
+TypeError: add got incompatible shapes for broadcasting: (26,), (16,).
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.

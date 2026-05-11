@@ -8,6 +8,9 @@ FINGER_JOINTS_TPL = ["{prefix}_swing","{prefix}_joint_0","{prefix}_joint_1","{pr
 FINGER_JOINTS = sum(
     ([t.format(prefix=p) for t in FINGER_JOINTS_TPL]
     for p in ["index","middle","ring","little"]), [])
-ALL_JOINTS = FR3_JOINTS + THUMB_JOINTS + FINGER_JOINTS  # 26
+HAND_JOINTS = THUMB_JOINTS + FINGER_JOINTS  # 26
+ALL_JOINTS = FR3_JOINTS + HAND_JOINTS
 FINGERTIP_SITES = ["thumb_tip","index_tip","middle_tip","ring_tip","little_tip"]
 TOUCH_SENSORS = [f"{p}_touch" for p in ["thumb","index","middle","ring","little"]]
+
+NQ = 16

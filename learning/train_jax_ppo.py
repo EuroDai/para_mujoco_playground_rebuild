@@ -462,7 +462,7 @@ def main(argv):
 
     def policy_params_fn(current_step, make_policy, params):  # pylint: disable=unused-argument
       rscope_handle.set_make_policy(make_policy)
-      # rscope_handle.dump_rollout(params) # Disabled to prevent rendering slice crash
+      rscope_handle.dump_rollout(params) # Disabled to prevent rendering slice crash
 
   # Train or load the model
   make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
