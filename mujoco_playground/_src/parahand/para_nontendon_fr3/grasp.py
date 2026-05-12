@@ -22,9 +22,9 @@ def default_config() -> config_dict.ConfigDict:
         action_repeat=1,
         action_scale=0.01,    # 增量动作的缩放比例
         impl='warp', # 默认用warp，
-        naconmax=30 * 8192, 
+        naconmax=2 * 30 * 8192, 
         # naccdmax=240*8192, 
-        njmax=500,
+        njmax=2000,
         reward_config=config_dict.create(
             scales=config_dict.create(
                 fingertip_approach=1.0,
@@ -35,7 +35,8 @@ def default_config() -> config_dict.ConfigDict:
                 action_rate_l2=-0.005,
                 termination=-1.0,
             )
-        )
+        ),
+        contact_force_threshold = 1.0,
     )
     return config
 
@@ -78,6 +79,8 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
 
         ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
         
+
+        '''
         q_cube = self._default_cube_pose.copy()
         q_cube = q_cube.at[:3].set(
             jax.random.uniform(
@@ -87,6 +90,9 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         )
 
         q_cube = q_cube.at[3:].set(para_nontendon_fr3_base.uniform_quat(cube_rng))
+        '''
+        q_cube = self._default_cube_pose.copy()
+        
         ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
         q = jp.concatenate([q_robot, q_cube])
 
@@ -133,6 +139,11 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         data = mjx_env.step(
             self.mjx_model, state.data, ctrl, self.n_substeps
         )
+        
+        # 4. 计算 done
+        done = self._get_termination(data, state.info)
+        # done = jp.array(False)
+        done = done.astype(reward.dtype)
 
         # 2. 计算 obs
         obs = self._get_obs(data, state.info)
@@ -143,11 +154,6 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
         }
         reward = sum(rewards.values()) * self.dt
-
-        # 4. 计算 done
-        done = self._get_termination(data, state.info)
-        # done = jp.array(False)
-        done = done.astype(reward.dtype)
 
         # 5. 更新 metrics
         metrics = state.metrics.copy()
@@ -173,19 +179,20 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         '''
         观测函数
         1. joint_pos: 关节位置
-        2. cube_pos: 方块位置(x, y, z)
+        2. cube_pose: 方块完整位姿(x, y, z, qw, qx, qy, qz)
         3. fingertip_pos: 指尖位置(x, y, z)
         4. last_act: 上一个动作
         5. target_pos: 目标位置(x, y, z)
         6. distance: 目标位置与方块位置的距离
         '''
-        cube_pos = data.xpos[self._cube_body_id]
+        cube_pose = data.qpos[self._cube_qids]
+        cube_pos = cube_pose[:3]
         fingertip_pos = data.site_xpos[self._fingertip_site_ids].reshape(-1)
         joint_pos = data.qpos[self._all_qids]
         last_act = info["last_act"]
         target_pos = data.site_xpos[self._target_site_id]
         distance = target_pos - cube_pos
-        return jp.concatenate([joint_pos, cube_pos, fingertip_pos, last_act, target_pos, distance], axis=-1)
+        return jp.concatenate([joint_pos, cube_pose, fingertip_pos, last_act, target_pos, distance], axis=-1)
 
     def _get_reward(self, data: mjx.Data, action: jax.Array, info: dict, metrics: dict) -> dict:
         return {
@@ -226,8 +233,21 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         '''
         奖励：指尖接触物体
         '''
-        contact = self.get_fingertip_cube_contact(data)
-        good_finger_contact = contact[0] & (contact[1] | contact[2] | contact[3] | contact[4])
+        contact_force = self.get_fingertip_cube_contact(data)
+        thumb_force = contact_force[0]
+        index_force = contact_force[1]
+        middle_force = contact_force[2]
+        ring_force = contact_force[3]
+        little_force = contact_force[4]
+        good_finger_contact = (
+            (thumb_force > self._config.contact_force_threshold) & 
+            (
+                (index_force > self._config.contact_force_threshold) | 
+                (middle_force > self._config.contact_force_threshold) | 
+                (ring_force > self._config.contact_force_threshold) | 
+                (little_force > self._config.contact_force_threshold)
+            )
+        )
         return good_finger_contact
 
     def _reward_position_tracking(self, data: mjx.Data) -> jax.Array:

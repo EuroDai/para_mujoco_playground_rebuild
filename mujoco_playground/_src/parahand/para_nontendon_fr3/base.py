@@ -46,32 +46,39 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
 
   def get_fingertip_cube_contact(self, data: mjx.Data) -> jax.Array:
     """
-    读取几何体的接触信息
+    返回每个指尖与 cube 接触的法向力大小。
     返回[thumb,index,middle,ring,little]
-    每个元素为1表示接触，0表示不接触
     """
     if hasattr(data._impl, "contact__geom"):
       geom = data._impl.contact__geom
       geom1 = geom[:, 0]
       geom2 = geom[:, 1]
-      nacon = jp.asarray(data._impl.nacon).reshape(-1)[0]
-      valid = jp.arange(geom.shape[0]) < nacon
+      efc_address = data._impl.contact__efc_address[:, 0]
+      ncon = jp.asarray(data._impl.nacon).reshape(-1)[0]
+      valid = (jp.arange(geom.shape[0]) < ncon) & (efc_address >= 0)
+      efc_force = data._impl.efc__force
     else:
       contact = data._impl.contact
       geom1 = contact.geom1
       geom2 = contact.geom2
-      valid = (geom1 >= 0) & (geom2 >= 0)
+      efc_address = contact.efc_address
+      valid = (geom1 >= 0) & (geom2 >= 0) & (efc_address >= 0)
+      efc_force = data._impl.efc_force
 
     cube_geom_ids = jp.array([self.mj_model.geom(name).id for name in consts.CUBE_GEOMS])
     geom1_is_cube = jp.any(geom1[:, None] == cube_geom_ids[None, :], axis=1)
     geom2_is_cube = jp.any(geom2[:, None] == cube_geom_ids[None, :], axis=1)
+
+    safe_efc_address = jp.where(valid, efc_address, 0)
+    contact_normal_force = jp.where(valid, jp.abs(efc_force[safe_efc_address]), 0.0)
 
     contacts = []
     for name in consts.FINGERTIP_SITES:
       tip_geom_id = self.mj_model.geom(name).id
       tip_on_geom1 = (geom1 == tip_geom_id) & geom2_is_cube
       tip_on_geom2 = (geom2 == tip_geom_id) & geom1_is_cube
-      contacts.append(jp.any(valid & (tip_on_geom1 | tip_on_geom2)))
+      tip_cube_contact = valid & (tip_on_geom1 | tip_on_geom2)
+      contacts.append(jp.sum(jp.where(tip_cube_contact, contact_normal_force, 0.0)))
 
     return jp.stack(contacts)
 

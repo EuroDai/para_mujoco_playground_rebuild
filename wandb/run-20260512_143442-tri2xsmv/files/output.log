@@ -33,3 +33,25 @@ Module mujoco.mjx.third_party.mujoco_warp._src.derivative 7ba27fe load on device
 78643200: reward=-0.550
 91750400: reward=-0.445
 104857600: reward=-0.477
+117964800: reward=-0.574
+131072000: reward=-0.582
+144179200: reward=-0.537
+157286400: reward=-0.676
+170393600: reward=-0.588
+183500800: reward=0.856
+196608000: reward=-0.282
+209715200: reward=-0.422
+222822400: reward=-0.363
+235929600: reward=-0.453
+249036800: reward=-0.405
+Done training.
+Time to JIT compile: 9.440983314998448
+Time to train: 1021.3760728989728
+Starting inference...
+FPS for rendering: 25.0
+100%|█████████████████████████████████████████████████████████████████████████████████| 128/128 [00:01<00:00, 65.76it/s]
+Rollout video saved as '/media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260512-143441/rollout0.mp4'.
+100%|█████████████████████████████████████████████████████████████████████████████████| 128/128 [00:01<00:00, 66.04it/s]
+Rollout video saved as '/media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260512-143441/rollout1.mp4'.
+100%|█████████████████████████████████████████████████████████████████████████████████| 128/128 [00:02<00:00, 63.35it/s]
+Rollout video saved as '/media/rvsa/extdata/daizy/mujoco_playground/logs/ParaNontendonFR3Grasp-20260512-143441/rollout2.mp4'.
