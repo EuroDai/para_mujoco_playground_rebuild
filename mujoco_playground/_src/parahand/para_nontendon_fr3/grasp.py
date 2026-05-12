@@ -142,8 +142,6 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         
         # 4. 计算 done
         done = self._get_termination(data, state.info)
-        # done = jp.array(False)
-        done = done.astype(reward.dtype)
 
         # 2. 计算 obs
         obs = self._get_obs(data, state.info)
@@ -151,9 +149,11 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         # 3. 计算 reward
         rewards = self._get_reward(data, action, state.info, state.metrics)
         rewards = {
-            k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+            k: jp.where(done, 0.0, v * self._config.reward_config.scales[k])
+            for k, v in rewards.items()
         }
-        reward = sum(rewards.values()) * self.dt
+        reward = jp.nan_to_num(sum(rewards.values()) * self.dt)
+        done = done.astype(reward.dtype)
 
         # 5. 更新 metrics
         metrics = state.metrics.copy()
@@ -216,7 +216,12 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         v_limit = 5.0
         abnormal_robot = jp.any(jp.abs(data.qvel[self._all_dqids]) > 2.0 * v_limit)
 
-        nans = jp.any(jp.isnan(data.qpos)) | jp.any(jp.isnan(data.qvel))
+        nans = (
+            jp.any(jp.isnan(data.qpos)) |
+            jp.any(jp.isnan(data.qvel)) |
+            jp.any(jp.isnan(data.xpos)) |
+            jp.any(jp.isnan(data.site_xpos))
+        )
         return object_out_of_bound | abnormal_robot | nans
 
     '''定义一些reward函数'''
