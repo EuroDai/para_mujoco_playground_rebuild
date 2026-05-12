@@ -88,44 +88,44 @@
         <camera name="cam_close" pos="-0.139 -0.614 0.217" xyaxes="0.830 0.557 -0.000 -0.218 0.324 0.921"/>
 
 
-        <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" friction="0.8 0.05 0.05"/>
-        <site name="target" pos="-0.44 -0.18 0.18" size="0.002" rgba="1 0 0 1" />
+        <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" friction="0.8 0.05 0.05" contype="32" conaffinity="4194176"/>
+        <site name="target" pos="-0.44 -0.18 0.4" size="0.002" rgba="1 0 0 1" />
         
         <body name="base_link" pos="0 0 0">
             <inertial pos="-0.00049027 -0.00045095 0.032527" mass="0.78393" fullinertia="0.0013854 0.0013849 0.001977 1.1455E-05 -1.0642E-05 -9.7435E-06" />
-            <!-- <geom pos="0 0 0.0399" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.064 0.0399" group="0" /> -->
+            <!-- <geom pos="0 0 0.0399" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.064 0.0399" group="0" contype="4" conaffinity="4193792"/> -->
             
             <body name="shoulder_link">
                 <joint class="fr3" name="j1" range="-3.0543 3.0543" />
                 <inertial pos="-3.8658E-07 -0.0024176 0.13519" mass="2.1225" fullinertia="0.0033227 0.0032419 0.0023129 -5.0648E-08 -6.3401E-09 4.3768E-05" />
-                <geom pos="0 0 0.13674" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.045 0.05694" group="0" />
-                <geom pos="0 -0.0269 0.14" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.045 0.0269" group="0" />
+                <geom pos="0 0 0.13674" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.045 0.05694" group="0" contype="16" conaffinity="4193344"/>
+                <geom pos="0 -0.0269 0.14" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.045 0.0269" group="0" contype="16" conaffinity="4193344"/>
                 
                 <body name="upperarm_link" pos="0 0 0.14" zaxis="0 -1 0">
                     <joint class="fr3" name="j2" range="-4.6251 1.4835" />
                     <inertial pos="-0.14111 3.4656E-06 0.11053" mass="4.8053" fullinertia="0.0075945 0.0081317 0.0059231 3.7143E-07 -7.9228E-12 -1.2918E-11" />
-                    <geom pos="0 0 0.11194" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.05794" group="0" />
-                    <geom pos="-0.14 0 0.114" zaxis="1 0 0" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.14" group="0" />
-                    <geom pos="-0.28 0 0.11194" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.05794" group="0" />
+                    <geom pos="0 0 0.11194" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.05794" group="0" contype="8" conaffinity="4194048"/>
+                    <geom pos="-0.14 0 0.114" zaxis="1 0 0" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.14" group="0" contype="8" conaffinity="4194048"/>
+                    <geom pos="-0.28 0 0.11194" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.045 0.05794" group="0" contype="1" conaffinity="4193280"/>
                     
                     <body name="forearm_link" pos="-0.28 0 0" euler="0 0 0">
                         <joint class="fr3" name="j3" range="-2.8274 2.8274" />
                         <inertial pos="-0.18987 5.2268E-06 0.0034145" mass="2.2312" fullinertia="0.0028852 0.0035145 0.0029186 7.3389E-07 -3.5373E-05 -2.8527E-07" />
-                        <geom pos="-0.1499 0 0" zaxis="1 0 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0899" group="0" />
-                        <geom pos="-0.24 0 0.00182" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.05118" group="0" />
-                        <geom pos="-0.007505 0 0.0069" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="box" size="0.0525 0.047 0.045" group="0" />
+                        <geom pos="-0.1499 0 0" zaxis="1 0 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0899" group="0" contype="128" conaffinity="4193312" />
+                        <geom pos="-0.24 0 0.00182" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.05118" group="0" contype="2" conaffinity="3932672"/>
+                        <geom pos="-0.007505 0 0.0069" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="box" size="0.0525 0.047 0.045" group="0" contype="64" conaffinity="3670032"/>
                         
                         <body name="wrist1_link" pos="-0.24001 0 0" euler="0 0 0">
                             <joint class="fr3" name="j4" range="-4.6251 1.4835" />
                             <inertial pos="4.5665E-07 -0.0034666 0.098292" mass="1.5961" fullinertia="0.0020112 0.0014524 0.0019076 6.8085E-09 2.4945E-08 3.2511E-05" />
-                            <geom pos="0 0 0.07785" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.04 0.0244" group="0" />
-                            <geom pos="0 -0.00291 0.102" zaxis="0 1 0" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.04 0.050275" group="0" />
+                            <geom pos="0 0 0.07785" zaxis="0 0 1" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.04 0.0244" group="0" contype="256" conaffinity="2097192"/>
+                            <geom pos="0 -0.00291 0.102" zaxis="0 1 0" rgba="0.94118 0.52941 0.18824 1" type="capsule" size="0.04 0.050275" group="0" contype="256" conaffinity="2097192"/>
                             
                             <body name="wrist2_link" pos="0 0 0.102" euler="1.5708 0 0">
                                 <joint class="fr3" name="j5" range="-3.0543 3.0543" />
                                 <inertial pos="-4.5262E-07 0.0034666 0.098292" mass="1.5961" fullinertia="0.0020112 0.0014524 0.0019076 6.8086E-09 -2.4945E-08 -3.2511E-05" />
-                                <geom pos="0 0 0.07785" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0244" group="0" />
-                                <geom pos="0 0.00291 0.102" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.050275" group="0" />
+                                <geom pos="0 0 0.07785" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0244" group="0" contype="512" conaffinity="2097198"/>
+                                <geom pos="0 0.00291 0.102" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.050275" group="0" contype="512" conaffinity="2097198"/>
                                 
                                 <body name="wrist3_link" pos="0 0 0.102" euler="-1.5708 0 0">
                                     <joint class="fr3" name="j6" range="-3.0543 3.0543" />
@@ -135,7 +135,7 @@
                                         <body name="palm" pos="0 0 0.1" euler="0 0 0" childclass="hand">
                                         <site name="test" size="0.002" rgba="0 0 1 1" />
                                             <site name="inner_palm_5" pos="-0.00249 -0.021 0.1" size="0.002" rgba="0 0 1 1" />
-                                            <geom name="palm_collision_1" type="box" pos="-0.00249 0.00075 0.1" size="0.045 0.02175 0.04" class="palm_collision" />
+                                            <geom name="palm_collision_1" type="box" pos="-0.00249 0.00075 0.1" size="0.045 0.02175 0.04" class="palm_collision" contype="262144" conaffinity="2097343"/>
                                             <body name="thumb_link_0" pos="0.01905 0 0.05851" euler="3.14 1.57 0">
                                                 <joint name="thumb_joint_0" type="hinge" axis="0 1 0" class="thumb_joint" range="0 0.785"/>
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
@@ -144,11 +144,11 @@
                                                     <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                     <body name="thumb_link_2" pos="0 0 0.022500" euler="-1.57 0 -1.57">
                                                         <joint name="thumb_joint_2" type="hinge" axis="0 0 1" class="thumb_joint" range="-0.611 1.57"/>
-                                                        <geom name="thumb_link_2_collision" type="box" pos="0.0225 0 0.00075" size="0.013795 0.00471 0.00485" class="collision"/>
+                                                        <geom name="thumb_link_2_collision" type="box" pos="0.0225 0 0.00075" size="0.013795 0.00471 0.00485" class="collision" contype="524288" conaffinity="2343167"/>
                                                         <body name="thumb_link_3" pos="0.04970 0 0" euler="0 0 -3.14">
                                                             <joint name="thumb_joint_3" type="hinge" axis="0 0 1" class="thumb_joint"/>
-                                                            <geom name="thumb_link_3_collision" type="box" pos="-0.0227 0 0" size="0.014 0.005 0.006" class="collision"/>
-                                                            <geom name="thumb_tip" pos="-0.0442 0.003 0" class="tip"/>
+                                                            <geom name="thumb_link_3_collision" type="box" pos="-0.0227 0 0" size="0.014 0.005 0.006" class="collision" contype="1048576" conaffinity="2357503"/>
+                                                            <geom name="thumb_tip" pos="-0.0442 0.003 0" class="tip" contype="1048576" conaffinity="2357503"/>
                                                             <site name="thumb_tip" pos="-0.0442 0.003 0" class="touch_sensor"/>
                                                         </body>
                                                     </body>
@@ -159,14 +159,14 @@
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="index_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="index_joint_0" axis="0 0 1" class="finger_joint" />
-                                                    <geom name="index_link_1_collision" class="link_1_collision"/>
+                                                    <geom name="index_link_1_collision" class="link_1_collision" contype="2048" conaffinity="3285181"/>
                                                     <body name="index_link_2" pos="0.04166 -0.00102 0" euler="-3.14 0 -3.14">
                                                         <joint name="index_joint_1" axis="0 0 -1" class="finger_joint" />
-                                                        <geom name="index_link_2_collision" class="link_2_collision"/>
+                                                        <geom name="index_link_2_collision" class="link_2_collision" contype="2048" conaffinity="3285181"/>
                                                         <body name="index_link_3" pos="-0.0225 0 0" euler="-3.14 0 3.14">
                                                             <joint name="index_joint_2" axis="0 0 1" class="finger_joint" />
-                                                            <geom name="index_link_3_collision" class="link_3_collision"/>
-                                                            <geom name="index_tip" class="tip" />
+                                                            <geom name="index_link_3_collision" class="link_3_collision" contype="32768" conaffinity="3875005"/>
+                                                            <geom name="index_tip" class="tip" contype="32768" conaffinity="3875005"/>
                                                             <site name="index_tip" class="touch_sensor" />
                                                         </body>
                                                     </body>
@@ -177,14 +177,14 @@
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="middle_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="middle_joint_0" axis="0 0 1" class="finger_joint" />
-                                                    <geom name="middle_link_1_collision" class="link_1_collision"/>
+                                                    <geom name="middle_link_1_collision" class="link_1_collision" contype="8192" conaffinity="3250365"/>
                                                     <body name="middle_link_2" pos="0.04166 -0.00102 0" euler="-3.14 0 -3.14">
                                                         <joint name="middle_joint_1" axis="0 0 -1" class="finger_joint"/>
-                                                        <geom name="middle_link_2_collision" class="link_2_collision" pos="-0.01388 0 0" size="0.00591 0.0075 0.0065"/>
+                                                        <geom name="middle_link_2_collision" class="link_2_collision" pos="-0.01388 0 0" size="0.00591 0.0075 0.0065" contype="2048" conaffinity="3285181"/>
                                                         <body name="middle_link_3" pos="-0.0275 0 0" euler="-3.14 0 3.14">
                                                             <joint name="middle_joint_2" axis="0 0 1" class="finger_joint" />
-                                                            <geom name="middle_link_3_collision" class="link_3_collision"/>
-                                                            <geom name="middle_tip" class="tip" />
+                                                            <geom name="middle_link_3_collision" class="link_3_collision" contype="131072" conaffinity="3791037"/>
+                                                            <geom name="middle_tip" class="tip" contype="131072" conaffinity="3791037"/>
                                                             <site name="middle_tip" class="touch_sensor" />
                                                         </body>
                                                     </body>
@@ -195,14 +195,14 @@
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="ring_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="ring_joint_0" axis="0 0 1" class="finger_joint" />
-                                                    <geom name="ring_link_1_collision" class="link_1_collision"/>
+                                                    <geom name="ring_link_1_collision" class="link_1_collision" contype="4096" conaffinity="3302589"/>
                                                     <body name="ring_link_2" pos="0.04166 -0.00102 0" euler="-3.14 0 -3.14">
                                                         <joint name="ring_joint_1" axis="0 0 -1" class="finger_joint" />
-                                                        <geom name="ring_link_2_collision" class="link_2_collision"/>
+                                                        <geom name="ring_link_2_collision" class="link_2_collision" contype="4096" conaffinity="3302589"/>
                                                         <body name="ring_link_3" pos="-0.0225 0 0" euler="-3.14 0 3.14">
                                                             <joint name="ring_joint_2" axis="0 0 1" class="finger_joint" />
-                                                            <geom name="ring_link_3_collision" class="link_3_collision"/>
-                                                            <geom name="ring_tip" class="tip" />
+                                                            <geom name="ring_link_3_collision" class="link_3_collision" contype="65536" conaffinity="3859645"/>
+                                                            <geom name="ring_tip" class="tip" contype="65536" conaffinity="3859645"/>
                                                             <site name="ring_tip" class="touch_sensor" />
                                                         </body>
                                                     </body>
@@ -213,14 +213,14 @@
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="little_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="little_joint_0" axis="0 0 1" class="finger_joint" />
-                                                    <geom name="little_link_1_collision" class="link_1_collision"/>
+                                                    <geom name="little_link_1_collision" class="link_1_collision" contype="1024" conaffinity="2166973"/>
                                                     <body name="little_link_2" pos="0.04166 -0.00102 0" euler="-3.14 0 -3.14">
                                                         <joint name="little_joint_1" axis="0 0 -1" class="finger_joint" />
-                                                        <geom name="little_link_2_collision" class="link_2_collision"/>
+                                                        <geom name="little_link_2_collision" class="link_2_collision" contype="1024" conaffinity="2166973"/>
                                                         <body name="little_link_3" pos="-0.0225 0 0" euler="-3.14 0 3.14">
                                                             <joint name="little_joint_2" axis="0 0 1" class="finger_joint" />
-                                                            <geom name="little_link_3_collision" class="link_3_collision"/>
-                                                            <geom name="little_tip" class="tip" />
+                                                            <geom name="little_link_3_collision" class="link_3_collision" contype="16384" conaffinity="3870909"/>
+                                                            <geom name="little_tip" class="tip" contype="16384" conaffinity="3870909"/>
                                                             <site name="little_tip" class="touch_sensor" />
                                                         </body>
                                                     </body>
@@ -235,10 +235,9 @@
                 </body>
             </body>
         </body>
-        <body name="cube" pos="-0.4 -0.25 0.05" quat="0 0 0 1" childclass="cube">
+        <body name="cube" pos="-0.4 -0.25 0.03" quat="0 0 0 1" childclass="cube">
             <freejoint name="cube_freejoint" />
-            <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001"/>
-            <geom name="cube1" type="box" pos="0 0 -0.02" size="0.02 0.02 0.02" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001"/>
+            <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/>
             <site name="cube_center" pos="0 0 0" group="4" />
         </body>
     </worldbody>

@@ -6,6 +6,8 @@ from etils import epath
 from ml_collections import config_dict
 import mujoco
 from mujoco import mjx
+import jax
+import jax.numpy as jp
 
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
@@ -42,6 +44,37 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
     self._mjx_model = mjx.put_model(self._mj_model, impl=self._config.impl)
     self._xml_path = xml_path
 
+  def get_fingertip_cube_contact(self, data: mjx.Data) -> jax.Array:
+    """
+    读取几何体的接触信息
+    返回[thumb,index,middle,ring,little]
+    每个元素为1表示接触，0表示不接触
+    """
+    if hasattr(data._impl, "contact__geom"):
+      geom = data._impl.contact__geom
+      geom1 = geom[:, 0]
+      geom2 = geom[:, 1]
+      nacon = jp.asarray(data._impl.nacon).reshape(-1)[0]
+      valid = jp.arange(geom.shape[0]) < nacon
+    else:
+      contact = data._impl.contact
+      geom1 = contact.geom1
+      geom2 = contact.geom2
+      valid = (geom1 >= 0) & (geom2 >= 0)
+
+    cube_geom_ids = jp.array([self.mj_model.geom(name).id for name in consts.CUBE_GEOMS])
+    geom1_is_cube = jp.any(geom1[:, None] == cube_geom_ids[None, :], axis=1)
+    geom2_is_cube = jp.any(geom2[:, None] == cube_geom_ids[None, :], axis=1)
+
+    contacts = []
+    for name in consts.FINGERTIP_SITES:
+      tip_geom_id = self.mj_model.geom(name).id
+      tip_on_geom1 = (geom1 == tip_geom_id) & geom2_is_cube
+      tip_on_geom2 = (geom2 == tip_geom_id) & geom1_is_cube
+      contacts.append(jp.any(valid & (tip_on_geom1 | tip_on_geom2)))
+
+    return jp.stack(contacts)
+
   @property
   def xml_path(self) -> str:
     return self._xml_path
@@ -57,3 +90,13 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
   @property
   def mjx_model(self) -> mjx.Model:
     return self._mjx_model
+
+def uniform_quat(rng: jax.Array) -> jax.Array:
+  """Generate a random quaternion from a uniform distribution."""
+  theta = jax.random.uniform(rng, (), minval=0.0, maxval=2 * jp.pi)
+  return jp.array([
+      jp.cos(theta / 2),
+      0.0,
+      0.0,
+      jp.sin(theta / 2),
+  ])

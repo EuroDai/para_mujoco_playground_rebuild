@@ -12,5 +12,8 @@ HAND_JOINTS = THUMB_JOINTS + FINGER_JOINTS  # 26
 ALL_JOINTS = FR3_JOINTS + HAND_JOINTS
 FINGERTIP_SITES = ["thumb_tip","index_tip","middle_tip","ring_tip","little_tip"]
 TOUCH_SENSORS = [f"{p}_touch" for p in ["thumb","index","middle","ring","little"]]
+CUBE_GEOMS = ["cube"]
+TARGET_SITE = "target"
+
 
 NQ = 16
