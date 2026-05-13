@@ -152,6 +152,7 @@
                                                             <joint name="thumb_joint_3" type="hinge" axis="0 0 1" class="thumb_joint"/>
                                                             <geom name="thumb_link_3_collision" type="box" pos="-0.0227 0 0" size="0.014 0.005 0.006" class="collision" contype="1048576" conaffinity="2357503"/>
                                                             <geom name="thumb_tip" pos="-0.0442 0.003 0" class="tip" contype="1048576" conaffinity="2357503"/>
+                                                            <site name="thumb_tip" pos="-0.0442 0.003 0" class="touch_sensor"/>
                                                             <geom name="thumb_tac" pos="-0.0442 -0.003 0" class="tac" contype="1048576" conaffinity="2357503"/>
                                                         </body>
                                                     </body>
@@ -170,6 +171,7 @@
                                                             <joint name="index_joint_2" axis="0 0 1" class="finger_joint" />
                                                             <geom name="index_link_3_collision" class="link_3_collision" contype="32768" conaffinity="3875005"/>
                                                             <geom name="index_tip" class="tip" contype="32768" conaffinity="3875005"/>
+                                                            <site name="index_tip" class="touch_sensor" />
                                                             <geom name="index_tac" class="tac" contype="32768" conaffinity="3875005"/>
                                                         </body>
                                                     </body>
@@ -188,6 +190,7 @@
                                                             <joint name="middle_joint_2" axis="0 0 1" class="finger_joint" />
                                                             <geom name="middle_link_3_collision" class="link_3_collision" contype="131072" conaffinity="3791037"/>
                                                             <geom name="middle_tip" class="tip" contype="131072" conaffinity="3791037"/>
+                                                            <site name="middle_tip" class="touch_sensor" />
                                                             <geom name="middle_tac" class="tac" contype="131072" conaffinity="3791037"/>
                                                         </body>
                                                     </body>
@@ -206,6 +209,7 @@
                                                             <joint name="ring_joint_2" axis="0 0 1" class="finger_joint" />
                                                             <geom name="ring_link_3_collision" class="link_3_collision" contype="65536" conaffinity="3859645"/>
                                                             <geom name="ring_tip" class="tip" contype="65536" conaffinity="3859645"/>
+                                                            <site name="ring_tip" class="touch_sensor" />
                                                             <geom name="ring_tac" class="tac" contype="65536" conaffinity="3859645"/>
                                                         </body>
                                                     </body>
@@ -224,6 +228,7 @@
                                                             <joint name="little_joint_2" axis="0 0 1" class="finger_joint" />
                                                             <geom name="little_link_3_collision" class="link_3_collision" contype="16384" conaffinity="3870909"/>
                                                             <geom name="little_tip" class="tip" contype="16384" conaffinity="3870909"/>
+                                                            <site name="little_tip" class="touch_sensor" />
                                                             <geom name="little_tac" class="tac" contype="16384" conaffinity="3870909"/>
                                                         </body>
                                                     </body>
@@ -311,11 +316,16 @@
         <frameangacc name="cube_angacc" objtype="body" objname="cube" />
         <framezaxis name="cube_upvector" objtype="body" objname="cube" />
         <framepos name="palm_pos" objtype="site" objname="inner_palm_5" />
-        <framepos name="thumb_fingertip_pos" objtype="geom" objname="thumb_tip" />
-        <framepos name="index_fingertip_pos" objtype="geom" objname="index_tip" />
-        <framepos name="middle_fingertip_pos" objtype="geom" objname="middle_tip" />
-        <framepos name="ring_fingertip_pos" objtype="geom" objname="ring_tip" />
-        <framepos name="little_fingertip_pos" objtype="geom" objname="little_tip" />
+        <framepos name="thumb_fingertip_pos" objtype="site" objname="thumb_tip" />
+        <framepos name="index_fingertip_pos" objtype="site" objname="index_tip" />
+        <framepos name="middle_fingertip_pos" objtype="site" objname="middle_tip" />
+        <framepos name="ring_fingertip_pos" objtype="site" objname="ring_tip" />
+        <framepos name="little_fingertip_pos" objtype="site" objname="little_tip" />
+        <touch name="thumb_touch" site="thumb_tip" />
+        <touch name="index_touch" site="index_tip" />
+        <touch name="middle_touch" site="middle_tip" />
+        <touch name="ring_touch" site="ring_tip" />
+        <touch name="little_touch" site="little_tip" />
 	</sensor>
 </mujoco>
 

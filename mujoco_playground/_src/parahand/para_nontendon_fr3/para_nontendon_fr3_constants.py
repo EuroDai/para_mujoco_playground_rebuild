@@ -10,6 +10,7 @@ FINGER_JOINTS = sum(
     for p in ["index","middle","ring","little"]), [])
 HAND_JOINTS = THUMB_JOINTS + FINGER_JOINTS  # 26
 ALL_JOINTS = FR3_JOINTS + HAND_JOINTS
+FINGERTIP_TIPS = ["thumb_tip","index_tip","middle_tip","ring_tip","little_tip"]
 FINGERTIP_TACS = ["thumb_tac","index_tac","middle_tac","ring_tac","little_tac"]
 TOUCH_SENSORS = [f"{p}_touch" for p in ["thumb","index","middle","ring","little"]]
 CUBE_GEOMS = ["cube"]
