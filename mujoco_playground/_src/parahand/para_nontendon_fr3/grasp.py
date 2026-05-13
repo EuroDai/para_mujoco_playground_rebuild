@@ -319,7 +319,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             trajectory,
             height=height,
             width=width,
-            camera="defalt" if camera is None else camera,
+            camera="default" if camera is None else camera,
             scene_option=scene_option,
             modify_scene_fns=modify_scene_fns,
         )
