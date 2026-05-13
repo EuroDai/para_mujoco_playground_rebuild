@@ -73,7 +73,7 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
     contact_normal_force = jp.where(valid, jp.abs(efc_force[safe_efc_address]), 0.0)
 
     contacts = []
-    for name in consts.FINGERTIP_SITES:
+    for name in consts.FINGERTIP_TACS:
       tip_geom_id = self.mj_model.geom(name).id
       tip_on_geom1 = (geom1 == tip_geom_id) & geom2_is_cube
       tip_on_geom2 = (geom2 == tip_geom_id) & geom1_is_cube

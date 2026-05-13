@@ -64,7 +64,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         self._all_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.ALL_JOINTS)
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
         self._cube_body_id = self._mj_model.body("cube").id
-        self._fingertip_site_ids = np.array([self._mj_model.site(n).id for n in consts.FINGERTIP_SITES])
+        self._fingertip_tacs_ids = np.array([self._mj_model.geom(n).id for n in consts.FINGERTIP_TACS])
         self._floor_geom_id = self._mj_model.geom("floor").id
         self._target_site_id = self._mj_model.site(consts.TARGET_SITE).id
         self._default_pose = self._init_q[self._all_qids]
@@ -187,7 +187,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         '''
         cube_pose = data.qpos[self._cube_qids]
         cube_pos = cube_pose[:3]
-        fingertip_pos = data.site_xpos[self._fingertip_site_ids].reshape(-1)
+        fingertip_pos = data.xpos[self._fingertip_tacs_ids].reshape(-1)
         joint_pos = data.qpos[self._all_qids]
         last_act = info["last_act"]
         target_pos = data.site_xpos[self._target_site_id]
@@ -230,7 +230,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         奖励：指尖靠近物体
         '''
         cube_pos = data.xpos[self._cube_body_id]
-        fingertip_pos = data.site_xpos[self._fingertip_site_ids]
+        fingertip_pos = data.xpos[self._fingertip_tacs_ids]
         object_ee_distance = jp.max(jp.linalg.norm(fingertip_pos - cube_pos, axis=1))
         return 1 - jp.tanh(object_ee_distance / 0.15)
 
@@ -299,7 +299,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             trajectory,
             height=height,
             width=width,
-            camera="default" if camera is None else camera,
+            camera="cam_close" if camera is None else camera,
             scene_option=scene_option,
             modify_scene_fns=modify_scene_fns,
         )
