@@ -64,7 +64,7 @@
     <option gravity="0 0 -9.81" />
     <keyframe>
         <key name="home" 
-            qpos="0.183 -2 2.09 -0.532 1.37 0
+            qpos="0.183 -1.57 2.09 -0.532 1.37 0
                 0 0 0 0
                 0 0 0 0
                 0 0 0 0
@@ -245,8 +245,8 @@
         </body>
         <body name="cube" pos="-0.4 -0.25 0.05" quat="0 0 0 1" childclass="cube">
             <freejoint name="cube_freejoint" />
-            <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/>
-            <geom name="cube1" type="box" pos="0 0 -0.02" size="0.02 0.02 0.02" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/>
+            <!-- <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/> -->
+            <geom name="cube" type="box" pos="0 0 0" size="0.03 0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/>
             <site name="cube_center" pos="0 0 0" group="4" />
         </body>
     </worldbody>
