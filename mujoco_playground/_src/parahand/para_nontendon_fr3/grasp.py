@@ -229,10 +229,9 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         1. cube_pointcloud:     方块点云
         '''
         # policy
-        cube_pose = data.qpos[self._cube_qids]
         target_pos = data.site_xpos[self._target_site_id]
         last_act = info["last_act"]
-        policy_obs = jp.concatenate([cube_pose, target_pos, last_act])
+        policy_obs = jp.concatenate([target_pos, last_act])
 
         # proprio
         joint_pos = data.qpos[self._all_qids]
