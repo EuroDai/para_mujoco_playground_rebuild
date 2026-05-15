@@ -24,7 +24,7 @@ def default_config() -> config_dict.ConfigDict:
         impl='warp', # 默认用warp，
         naconmax=30 * 8192, 
         # naccdmax=240*8192, 
-        njmax=1000,
+        njmax=2000,
         reward_config=config_dict.create(
             scales=config_dict.create(
                 fingertip_approach=1.0,
