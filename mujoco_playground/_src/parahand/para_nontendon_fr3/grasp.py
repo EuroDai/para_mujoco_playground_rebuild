@@ -205,24 +205,61 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
     def _get_obs(self, data: mjx.Data, info: dict) -> jax.Array:
         '''
         观测函数
-        1. joint_pos: 关节位置
-        2. cube_pose: 方块完整位姿(x, y, z, qw, qx, qy, qz)
-        3. fingertip_pos: 指尖位置(x, y, z)
-        4. last_act: 上一个动作
-        5. target_pos: 目标位置(x, y, z)
-        6. distance: 目标位置与方块位置的距离
+        policy:
+        1. cube_pose: 方块完整位姿(x, y, z, qw, qx, qy, qz)
+        2. target_pos: 目标位置(x, y, z)
+        3. last_act: 上一个动作
+        proprio：
+        1. joint_pos: 关节角度
+        2. joint_vel: 关节速度
+        3. 指尖状态：
+            fingertip_poses：指尖位姿
+            fingertip_vels：指尖线速度、角速度
+        4. fingertip_force：指尖力
+        perception：
+        1. 方块位姿
         '''
+        # policy
         cube_pose = data.qpos[self._cube_qids]
-        cube_pos = cube_pose[:3]
-        fingertip_pos = data.site_xpos[self._fingertip_site_ids].reshape(-1)
-        joint_pos = data.qpos[self._all_qids]
-        last_act = info["last_act"]
         target_pos = data.site_xpos[self._target_site_id]
-        distance = target_pos - cube_pos
-        fingertip_force = self.get_fingertip_cube_contact(data)
-        return jp.concatenate([joint_pos, cube_pose, fingertip_pos, fingertip_force, last_act, target_pos, distance], axis=-1)
+        last_act = info["last_act"]
+        policy_obs = jp.concatenate([cube_pose, target_pos, last_act])
 
-    def _get_reward(self, data: mjx.Data, action: jax.Array, info: dict, metrics: dict, done: jax.Array) -> dict:
+        # proprio
+        joint_pos = data.qpos[self._all_qids]
+        joint_vel = data.qvel[self._all_dqids]
+        fingertip_poses = []
+        fingertip_vels = []
+        for fingertip in consts.FINGERTIP_TIPS:
+            site_id = self._mj_model.site(fingertip).id
+            body_id = self._mj_model.site_bodyid[site_id]
+            pos = data.site_xpos[site_id]
+            mat = data.site_xmat[site_id]
+            quat = self._mat_to_quat(mat)
+
+            jacp, jacr = mjx.jac(self.mjx_model, data, pos, body_id)
+            linvel = jacp.T @ data.qvel
+            angvel = jacr.T @ data.qvel
+
+            fingertip_poses.append(jp.concatenate([pos, quat]))
+            fingertip_vels.append(jp.concatenate([linvel, angvel]))
+
+        fingertip_poses = jp.concatenate(fingertip_poses)   # 5 * 7 = 35
+        fingertip_vels = jp.concatenate(fingertip_vels)     # 5 * 6 = 30
+        fingertip_force = self.get_fingertip_cube_contact(data)
+        proprio_obs = jp.concatenate([joint_pos, joint_vel, fingertip_poses, fingertip_vels, fingertip_force])
+
+        # perception
+        cube_pointcloud = self.get_box_pointcloud(data, num_points=1000, box_geom_name="cube").reshape(-1)
+        perception_obs = jp.concatenate([cube_pointcloud])
+        return jp.concatenate([policy_obs, proprio_obs, perception_obs], axis=-1)
+
+    def _get_reward(
+        self, data: mjx.Data, 
+        action: jax.Array, info: dict,
+        metrics: dict, 
+        done: jax.Array
+    ) -> dict:
         return {
             "fingertip_approach": self._reward_fingertip_approach(data),
             "good_finger_contact": self._reward_good_finger_contact(data),
@@ -305,26 +342,13 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         '''
         return jp.sum(jp.square(action))
 
-    def _cost_action_rate_l2(self, action: jax.Array, last_action: jax.Array) -> jax.Array:
+    def _cost_action_rate_l2(
+        self, 
+        action: jax.Array, 
+        last_action: jax.Array
+    ) -> jax.Array:
         '''
         惩罚：动作变化率
         '''
         return jp.sum(jp.square(action - last_action))
 
-    def render(
-        self,
-        trajectory,
-        height: int = 240,
-        width: int = 320,
-        camera: Optional[str] = None,
-        scene_option=None,
-        modify_scene_fns=None,
-    ):
-        return super().render(
-            trajectory,
-            height=height,
-            width=width,
-            camera="default" if camera is None else camera,
-            scene_option=scene_option,
-            modify_scene_fns=modify_scene_fns,
-        )

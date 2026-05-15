@@ -8,6 +8,7 @@ import mujoco
 from mujoco import mjx
 import jax
 import jax.numpy as jp
+import numpy as np
 
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
@@ -82,6 +83,149 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
 
     return jp.stack(contacts)
 
+  def _mat_to_quat(mat: jax.Array) -> jax.Array:
+    trace = mat[0, 0] + mat[1, 1] + mat[2, 2]
+
+    def case_trace_positive():
+      s = 2.0 * jp.sqrt(trace + 1.0)
+      qw = 0.25 * s
+      qx = (mat[2, 1] - mat[1, 2]) / s
+      qy = (mat[0, 2] - mat[2, 0]) / s
+      qz = (mat[1, 0] - mat[0, 1]) / s
+      return jp.array([qw, qx, qy, qz])
+
+    def case_x():
+      s = 2.0 * jp.sqrt(1.0 + mat[0, 0] - mat[1, 1] - mat[2, 2])
+      qw = (mat[2, 1] - mat[1, 2]) / s
+      qx = 0.25 * s
+      qy = (mat[0, 1] + mat[1, 0]) / s
+      qz = (mat[0, 2] + mat[2, 0]) / s
+      return jp.array([qw, qx, qy, qz])
+
+    def case_y():
+      s = 2.0 * jp.sqrt(1.0 + mat[1, 1] - mat[0, 0] - mat[2, 2])
+      qw = (mat[0, 2] - mat[2, 0]) / s
+      qx = (mat[0, 1] + mat[1, 0]) / s
+      qy = 0.25 * s
+      qz = (mat[1, 2] + mat[2, 1]) / s
+      return jp.array([qw, qx, qy, qz])
+
+    def case_z():
+      s = 2.0 * jp.sqrt(1.0 + mat[2, 2] - mat[0, 0] - mat[1, 1])
+      qw = (mat[1, 0] - mat[0, 1]) / s
+      qx = (mat[0, 2] + mat[2, 0]) / s
+      qy = (mat[1, 2] + mat[2, 1]) / s
+      qz = 0.25 * s
+      return jp.array([qw, qx, qy, qz])
+
+    return jp.where(
+      trace > 0,
+      case_trace_positive(),
+      jp.where(
+          (mat[0, 0] > mat[1, 1]) & (mat[0, 0] > mat[2, 2]),
+          case_x(),
+          jp.where(mat[1, 1] > mat[2, 2], case_y(), case_z()),
+      ),
+    )
+
+  def get_box_pointcloud(
+    self,
+    data: mjx.Data,
+    num_points: int,
+    box_geom_name: str = "cube",
+  ) -> jax.Array:
+    geom_id = self.mj_model.geom(box_geom_name).id
+    if self.mj_model.geom_type[geom_id] != mujoco.mjtGeom.mjGEOM_BOX.value:
+      raise ValueError(f"Geom {box_geom_name!r} is not a box.")
+
+    hx, hy, hz = self.mj_model.geom_size[geom_id]
+    face_areas = np.array([
+        4.0 * hy * hz,
+        4.0 * hy * hz,
+        4.0 * hx * hz,
+        4.0 * hx * hz,
+        4.0 * hx * hy,
+        4.0 * hx * hy,
+    ])
+    face_counts = np.floor(num_points * face_areas / np.sum(face_areas)).astype(int)
+    remainder = num_points - int(face_counts.sum())
+    if remainder > 0:
+      face_fracs = num_points * face_areas / np.sum(face_areas) - face_counts
+      face_counts[np.argsort(-face_fracs)[:remainder]] += 1
+
+    local_points = []
+    face_extents = [
+        (hy, hz),
+        (hy, hz),
+        (hx, hz),
+        (hx, hz),
+        (hx, hy),
+        (hx, hy),
+    ]
+    for face_id, face_count in enumerate(face_counts):
+      if face_count == 0:
+        continue
+      u_extent, v_extent = face_extents[face_id]
+      cols = max(1, int(np.ceil(np.sqrt(face_count * u_extent / v_extent))))
+      rows = int(np.ceil(face_count / cols))
+      u = (np.arange(cols) + 0.5) / cols * 2.0 - 1.0
+      v = (np.arange(rows) + 0.5) / rows * 2.0 - 1.0
+      uu, vv = np.meshgrid(u, v, indexing="xy")
+      uv = np.stack([uu.reshape(-1), vv.reshape(-1)], axis=-1)[:face_count]
+
+      if face_id == 0:
+        face_points = np.stack([
+            np.full(face_count, hx), uv[:, 0] * hy, uv[:, 1] * hz
+        ], axis=-1)
+      elif face_id == 1:
+        face_points = np.stack([
+            np.full(face_count, -hx), uv[:, 0] * hy, uv[:, 1] * hz
+        ], axis=-1)
+      elif face_id == 2:
+        face_points = np.stack([
+            uv[:, 0] * hx, np.full(face_count, hy), uv[:, 1] * hz
+        ], axis=-1)
+      elif face_id == 3:
+        face_points = np.stack([
+            uv[:, 0] * hx, np.full(face_count, -hy), uv[:, 1] * hz
+        ], axis=-1)
+      elif face_id == 4:
+        face_points = np.stack([
+            uv[:, 0] * hx, uv[:, 1] * hy, np.full(face_count, hz)
+        ], axis=-1)
+      else:
+        face_points = np.stack([
+            uv[:, 0] * hx, uv[:, 1] * hy, np.full(face_count, -hz)
+        ], axis=-1)
+      local_points.append(face_points)
+
+    if local_points:
+      local_points = jp.array(np.concatenate(local_points, axis=0), dtype=data.qpos.dtype)
+    else:
+      local_points = jp.zeros((0, 3), dtype=data.qpos.dtype)
+
+    geom_xmat = data.geom_xmat[geom_id]
+    geom_xpos = data.geom_xpos[geom_id]
+    return local_points @ geom_xmat.T + geom_xpos
+
+  def render(
+    self,
+    trajectory,
+    height: int = 240,
+    width: int = 320,
+    camera: Optional[str] = None,
+    scene_option=None,
+    modify_scene_fns=None,
+  ):
+    return super().render(
+      trajectory,
+      height=height,
+      width=width,
+      camera="default" if camera is None else camera,
+      scene_option=scene_option,
+      modify_scene_fns=modify_scene_fns,
+    )
+
   @property
   def xml_path(self) -> str:
     return self._xml_path
@@ -107,3 +251,4 @@ def uniform_quat(rng: jax.Array) -> jax.Array:
       0.0,
       jp.sin(theta / 2),
   ])
+  
