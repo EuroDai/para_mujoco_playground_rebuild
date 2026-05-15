@@ -20,7 +20,7 @@ def default_config() -> config_dict.ConfigDict:
         sim_dt=0.002,        # 底层物理仿真频率 500Hz
         episode_length=256,  # 每个回合最大步数
         action_repeat=1,
-        action_scale=0.01,    # 增量动作的缩放比例
+        action_scale=0.04,    # 增量动作的缩放比例
         impl='warp', # 默认用warp，
         naconmax=30 * 8192, 
         # naccdmax=240*8192, 
@@ -156,12 +156,11 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         obs = self._get_obs(data, state.info)
 
         # 3. 计算 reward
-        rewards = self._get_reward(data, action, state.info, state.metrics)
+        rewards = self._get_reward(data, action, state.info, state.metrics, done)
         rewards = {
-            k: jp.where(done, 0.0, v * self._config.reward_config.scales[k])
-            for k, v in rewards.items()
+            k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
         }
-        reward = jp.nan_to_num(sum(rewards.values()) * self.dt)
+        reward = sum(rewards.values()) * self.dt
         done = done.astype(reward.dtype)
 
         # 5. 更新 metrics
@@ -214,7 +213,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         fingertip_force = self.get_fingertip_cube_contact(data)
         return jp.concatenate([joint_pos, cube_pose, fingertip_pos, fingertip_force, last_act, target_pos, distance], axis=-1)
 
-    def _get_reward(self, data: mjx.Data, action: jax.Array, info: dict, metrics: dict) -> dict:
+    def _get_reward(self, data: mjx.Data, action: jax.Array, info: dict, metrics: dict, done: jax.Array) -> dict:
         return {
             "fingertip_approach": self._reward_fingertip_approach(data),
             "good_finger_contact": self._reward_good_finger_contact(data),
@@ -233,16 +232,13 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             (cube_pos[2] < 0.03)  | (cube_pos[2] > 2.0)
         )
 
-        v_limit = 5.0
-        abnormal_robot = jp.any(jp.abs(data.qvel[self._all_dqids]) > 2.0 * v_limit)
-
         nans = (
             jp.any(jp.isnan(data.qpos)) |
             jp.any(jp.isnan(data.qvel)) |
             jp.any(jp.isnan(data.xpos)) |
             jp.any(jp.isnan(data.site_xpos))
         )
-        return object_out_of_bound | abnormal_robot | nans
+        return object_out_of_bound | nans
 
     '''定义一些reward函数'''
     def _reward_fingertip_approach(self, data: mjx.Data) -> jax.Array:
