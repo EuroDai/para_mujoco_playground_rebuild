@@ -18,8 +18,8 @@ def default_config() -> config_dict.ConfigDict:
         sim_dt=0.002,        # 底层物理仿真频率 500Hz
         episode_length=256,  # 每个回合最大步数
         action_repeat=1,
-        action_scale_arm=0.01,    # 增量动作的缩放比例
-        action_scale_hand=0.02,    # 增量动作的缩放比例
+        action_scale_arm=0.02,    # 增量动作的缩放比例
+        action_scale_hand=0.4,    # 增量动作的缩放比例
         impl='warp', # 默认用warp，
         naconmax=30 * 8192, 
         # naccdmax=240*8192, 
@@ -31,8 +31,8 @@ def default_config() -> config_dict.ConfigDict:
                 good_finger_contact=0.5,
                 position_tracking=2.0,
                 success=10.0,
-                action_l2=-0.005,
-                action_rate_l2=-0.005,
+                action_l2=-0.001,
+                action_rate_l2=-0.001,
                 termination=-1.0,
             )
         ),
@@ -181,14 +181,14 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             metrics[f"reward/{k}"] = v
         
         fingertip_force = self.get_fingertip_cube_contact(data)
-        for name, force in zip(consts.FINGERTIP_TACS, fingertip_force):
+        fingertip_force_norm = jp.linalg.norm(fingertip_force, axis=-1)
+        for name, force in zip(consts.FINGERTIP_TACS, fingertip_force_norm):
             metrics[f"fingertip_force/{name}"] = force
 
         '''
         for name, d in zip(consts.ALL_JOINTS, delta):
             metrics[f"action/{name}"] = d
         '''
-
 
         # 6. 更新 info
         info = state.info.copy()
@@ -255,7 +255,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
 
         fingertip_poses = jp.concatenate(fingertip_poses)
         fingertip_vels = jp.concatenate(fingertip_vels)
-        fingertip_force = self.get_fingertip_cube_contact(data)
+        fingertip_force = self.get_fingertip_cube_contact(data).reshape(-1)
         proprio_obs = jp.concatenate([
             joint_pos,
             joint_vel,
@@ -319,17 +319,18 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         奖励：指尖接触物体
         '''
         contact_force = self.get_fingertip_cube_contact(data)
-        thumb_force = contact_force[0]
-        index_force = contact_force[1]
-        middle_force = contact_force[2]
-        ring_force = contact_force[3]
-        little_force = contact_force[4]
+        contact_force_norm = jp.linalg.norm(contact_force, axis=-1)
+        thumb_force = contact_force_norm[0]
+        index_force = contact_force_norm[1]
+        middle_force = contact_force_norm[2]
+        ring_force = contact_force_norm[3]
+        little_force = contact_force_norm[4]
         good_finger_contact = (
-            (thumb_force > self._config.contact_force_threshold) & 
+            (thumb_force > self._config.contact_force_threshold) &
             (
-                (index_force > self._config.contact_force_threshold) | 
-                (middle_force > self._config.contact_force_threshold) | 
-                (ring_force > self._config.contact_force_threshold) | 
+                (index_force > self._config.contact_force_threshold) |
+                (middle_force > self._config.contact_force_threshold) |
+                (ring_force > self._config.contact_force_threshold) |
                 (little_force > self._config.contact_force_threshold)
             )
         )

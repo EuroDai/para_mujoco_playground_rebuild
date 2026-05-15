@@ -39,16 +39,19 @@ def brax_ppo_config(
       num_resets_per_eval=10,
   )
   if env_name == "ParaNontendonFR3Grasp":
-    rl_config.num_timesteps = 100_000_000
+    rl_config.num_timesteps = 2_000_000_000
     rl_config.num_evals = 20
-    rl_config.num_minibatches = 32
-    rl_config.unroll_length = 40
-    rl_config.num_updates_per_batch = 4
+    rl_config.num_minibatches = 4
+    rl_config.unroll_length = 32
+    rl_config.num_updates_per_batch = 5
     rl_config.discounting = 0.99
-    rl_config.learning_rate = 3e-4
-    rl_config.entropy_cost = 1e-2
-    rl_config.num_envs = 2048
-    rl_config.batch_size = 256
+    rl_config.gae_lambda = 0.95
+    rl_config.learning_rate = 1e-3
+    rl_config.entropy_cost = 0.005
+    rl_config.desired_kl = 0.01
+    rl_config.max_grad_norm = 1.0
+    rl_config.num_envs = 4096
+    rl_config.batch_size = 1024
     rl_config.network_factory = config_dict.create(
         policy_hidden_layer_sizes=(512, 256, 128),
         value_hidden_layer_sizes=(512, 256, 128),

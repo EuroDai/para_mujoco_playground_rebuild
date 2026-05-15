@@ -47,8 +47,8 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
 
   def get_fingertip_cube_contact(self, data: mjx.Data) -> jax.Array:
     """
-    返回每个指尖与 cube 接触的法向力大小。
-    返回[thumb,index,middle,ring,little]
+    返回每个指尖与 cube 接触的三维世界系接触合力。
+    返回形状为 [5, 3]，对应 [thumb,index,middle,ring,little]。
     """
     if hasattr(data._impl, "contact__geom"):
       geom = data._impl.contact__geom
@@ -57,6 +57,9 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
       efc_address = data._impl.contact__efc_address[:, 0]
       ncon = jp.asarray(data._impl.nacon).reshape(-1)[0]
       valid = (jp.arange(geom.shape[0]) < ncon) & (efc_address >= 0)
+      frame = data._impl.contact__frame.reshape(-1, 3, 3)
+      dim = data._impl.contact__dim[:, 0]
+      friction = data._impl.contact__friction
       efc_force = data._impl.efc__force
     else:
       contact = data._impl.contact
@@ -64,14 +67,43 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
       geom2 = contact.geom2
       efc_address = contact.efc_address
       valid = (geom1 >= 0) & (geom2 >= 0) & (efc_address >= 0)
+      frame = contact.frame.reshape(-1, 3, 3)
+      dim = contact.dim
+      friction = contact.friction
       efc_force = data._impl.efc_force
 
     cube_geom_ids = jp.array([self.mj_model.geom(name).id for name in consts.CUBE_GEOMS])
     geom1_is_cube = jp.any(geom1[:, None] == cube_geom_ids[None, :], axis=1)
     geom2_is_cube = jp.any(geom2[:, None] == cube_geom_ids[None, :], axis=1)
 
-    safe_efc_address = jp.where(valid, efc_address, 0)
-    contact_normal_force = jp.where(valid, jp.abs(efc_force[safe_efc_address]), 0.0)
+    def _decode_contact_force(cid: int) -> jax.Array:
+      addr = efc_address[cid]
+      condim = dim[cid]
+
+      def _invalid():
+        return jp.zeros(3, dtype=efc_force.dtype)
+
+      def _valid():
+        if self.mj_model.opt.cone == mujoco.mjtCone.mjCONE_PYRAMIDAL:
+          if condim == 1:
+            force_contact = jp.array([efc_force[addr], 0.0, 0.0])
+          else:
+            pyr = efc_force[addr : addr + 2 * (condim - 1)]
+            fri = friction[cid]
+            force_contact = jp.array([
+                pyr[0::2].sum() + pyr[1::2].sum(),
+                (pyr[0::2] - pyr[1::2]) @ fri[: condim - 1],
+                jp.zeros((), dtype=efc_force.dtype),
+            ])
+        else:
+          force_contact = jp.zeros(3, dtype=efc_force.dtype)
+          force_contact = force_contact.at[:condim].set(efc_force[addr : addr + condim])
+
+        return force_contact @ frame[cid]
+
+      return jax.lax.cond((addr >= 0) & valid[cid], _valid, _invalid)
+
+    contact_force_vec = jax.vmap(_decode_contact_force)(jp.arange(geom1.shape[0]))
 
     contacts = []
     for name in consts.FINGERTIP_TACS:
@@ -79,7 +111,9 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
       tip_on_geom1 = (geom1 == tip_geom_id) & geom2_is_cube
       tip_on_geom2 = (geom2 == tip_geom_id) & geom1_is_cube
       tip_cube_contact = valid & (tip_on_geom1 | tip_on_geom2)
-      contacts.append(jp.sum(jp.where(tip_cube_contact, contact_normal_force, 0.0)))
+      contacts.append(
+          jp.sum(jp.where(tip_cube_contact[:, None], contact_force_vec, 0.0), axis=0)
+      )
 
     return jp.stack(contacts)
 
