@@ -20,7 +20,8 @@ def default_config() -> config_dict.ConfigDict:
         sim_dt=0.002,        # 底层物理仿真频率 500Hz
         episode_length=256,  # 每个回合最大步数
         action_repeat=1,
-        action_scale=0.04,    # 增量动作的缩放比例
+        action_scale_arm=0.01,    # 增量动作的缩放比例
+        action_scale_hand=0.02,    # 增量动作的缩放比例
         impl='warp', # 默认用warp，
         naconmax=30 * 8192, 
         # naccdmax=240*8192, 
@@ -60,6 +61,8 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         self._init_qvel = jp.array(home_key.qvel, dtype=float)
         self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
         self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
+        self._arm_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ARM_JOINTS)
+        self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.HAND_JOINTS)
         self._all_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ALL_JOINTS)
         self._all_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.ALL_JOINTS)
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
@@ -142,8 +145,14 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
 
         # 1. 更新 data
         # 执行一次动作
-        delta = action * self._config.action_scale
-        ctrl = state.data.ctrl + delta
+        arm_n = len(self._arm_qids)
+
+        delta_arm = action[:arm_n] * self._config.action_scale_arm
+        delta_hand = action[arm_n:] * self._config.action_scale_hand
+
+        ctrl = state.data.ctrl
+        ctrl = ctrl.at[self._arm_qids].add(delta_arm)
+        ctrl = ctrl.at[self._hand_qids].add(delta_hand)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
         data = mjx_env.step(
             self.mjx_model, state.data, ctrl, self.n_substeps
