@@ -266,7 +266,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
 
         # perception
         cube_pointcloud = self.get_box_pointcloud(
-            data, num_points=1000, box_geom_name="cube"
+            data, num_points=256, box_geom_name="cube"
         ).reshape(-1)
         return jp.concatenate([policy_obs, proprio_obs, cube_pointcloud], axis=-1)
 
