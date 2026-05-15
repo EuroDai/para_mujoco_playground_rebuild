@@ -17,7 +17,7 @@
             <geom zaxis="1 0 0" type="capsule" size="0.008 0.006" pos="0.022 0 0" rgba="1 1 .6 1" density="1000" friction="1 0.2 0.01" />
         </default>
 		<default class="tac">
-            <geom zaxis="1 0 0" type="capsule" size="0.006 0.003" pos="0.026 0.006 0" rgba="0 1 0 1" density="1000" friction="1 0.2 0.01" />
+            <geom zaxis="1 0 0" type="capsule" size="0.006 0.003" pos="0.026 0.006 0" rgba="0 1 0 0.3" density="1000" friction="1 0.2 0.01" />
         </default>
         <default class="collision">
             <geom density="1250" friction="1.0 0.1 0.001" rgba="0.7 0.3 0.3 1" />
@@ -50,7 +50,7 @@
             <position ctrllimited="true" inheritrange="1" kp="10"/>
         </default>
         <default class="touch_sensor">
-            <site rgba="1 0 0 0" zaxis="1 0 0" type="capsule" size="0.006 0.003" pos="0.026 0.006 0"/>
+            <site rgba="1 0 0 0.3" zaxis="1 0 0" size="0.006" pos="0.029 0.006 0"/>
         </default>
         <default class="fr3">
             <joint type="hinge" axis="0 0 1" armature="0.1" />
@@ -153,7 +153,7 @@
                                                             <geom name="thumb_link_3_collision" type="box" pos="-0.0227 0 0" size="0.014 0.005 0.006" class="collision" contype="1048576" conaffinity="2357503"/>
                                                             <geom name="thumb_tip" pos="-0.0442 0.003 0" class="tip" contype="1048576" conaffinity="2357503"/>
                                                             <site name="thumb_tip" pos="-0.0442 -0.003 0" class="touch_sensor"/>
-                                                            <geom name="thumb_tac" pos="-0.0442 -0.003 0" class="tac" contype="1048576" conaffinity="2357503"/>
+                                                            <geom name="thumb_tac" pos="-0.0412 -0.003 0" class="tac" contype="1048576" conaffinity="2357503"/>
                                                         </body>
                                                     </body>
                                                 </body>
