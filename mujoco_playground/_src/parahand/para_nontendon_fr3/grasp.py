@@ -23,7 +23,7 @@ def default_config() -> config_dict.ConfigDict:
         v_limit_arm=0.02 / 0.1 * 6.4,
         v_limit_hand=0.04 / 0.1 * 10,
         impl='warp', # 默认用warp，
-        naconmax=30 * 4096, 
+        naconmax=70 * 4096, 
         # naccdmax=240*8192, 
         njmax=1500,
         history_len=5,
@@ -296,7 +296,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             (cube_pos[1] < -1.0) | (cube_pos[1] > 1.0) |
             (cube_pos[2] < 0.03)  | (cube_pos[2] > 2.0)
         )
-        
+
         abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm)
         abnormal_hand = jp.any(jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
         abnormal_robot = abnormal_arm | abnormal_hand
