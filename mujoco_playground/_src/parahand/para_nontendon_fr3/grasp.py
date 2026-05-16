@@ -19,11 +19,13 @@ def default_config() -> config_dict.ConfigDict:
         episode_length=256,  # 每个回合最大步数
         action_repeat=1,
         action_scale_arm=0.02,    # 增量动作的缩放比例
-        action_scale_hand=0.4,    # 增量动作的缩放比例
+        action_scale_hand=0.04,    # 增量动作的缩放比例
+        v_limit_arm=0.02 / 0.1 * 6.4,
+        v_limit_hand=0.04 / 0.1 * 10,
         impl='warp', # 默认用warp，
-        naconmax=30 * 8192, 
+        naconmax=30 * 4096, 
         # naccdmax=240*8192, 
-        njmax=2000,
+        njmax=1500,
         history_len=5,
         reward_config=config_dict.create(
             scales=config_dict.create(
@@ -295,13 +297,18 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             (cube_pos[2] < 0.03)  | (cube_pos[2] > 2.0)
         )
 
+        abnormal_robot = jp.any(
+            (jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm) | 
+            (jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
+        )
+
         nans = (
             jp.any(jp.isnan(data.qpos)) |
             jp.any(jp.isnan(data.qvel)) |
             jp.any(jp.isnan(data.xpos)) |
             jp.any(jp.isnan(data.site_xpos))
         )
-        return object_out_of_bound | nans
+        return object_out_of_bound | abnormal_robot | nans
 
     '''定义一些reward函数'''
     def _reward_fingertip_approach(self, data: mjx.Data) -> jax.Array:
