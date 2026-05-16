@@ -296,11 +296,10 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             (cube_pos[1] < -1.0) | (cube_pos[1] > 1.0) |
             (cube_pos[2] < 0.03)  | (cube_pos[2] > 2.0)
         )
-
-        abnormal_robot = jp.any(
-            (jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm) | 
-            (jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
-        )
+        
+        abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm)
+        abnormal_hand = jp.any(jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
+        abnormal_robot = abnormal_arm | abnormal_hand
 
         nans = (
             jp.any(jp.isnan(data.qpos)) |
