@@ -92,7 +92,7 @@
 
 
         <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" friction="0.8 0.05 0.05" contype="32" conaffinity="4194176"/>
-        <site name="target" pos="-0.44 -0.18 0.4" size="0.002" rgba="1 0 0 1" />
+        <site name="target" pos="-0.55 -0.18 0.4" size="0.002" rgba="1 0 0 1" />
         
         <body name="base_link" pos="0 0 0">
             <inertial pos="-0.00049027 -0.00045095 0.032527" mass="0.78393" fullinertia="0.0013854 0.0013849 0.001977 1.1455E-05 -1.0642E-05 -9.7435E-06" />
