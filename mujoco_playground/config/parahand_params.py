@@ -39,6 +39,7 @@ def brax_ppo_config(
       num_resets_per_eval=10,
   )
   if env_name == "ParaNontendonFR3Grasp":
+    rl_config.normalize_observations=False,
     rl_config.num_timesteps = 2_000_000_000
     rl_config.num_evals = 100
     rl_config.num_minibatches = 4
