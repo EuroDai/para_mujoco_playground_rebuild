@@ -436,6 +436,11 @@ def main(argv):
   if _RSCOPE_ENVS.value:
     # Interactive visualisation of policy checkpoints
     from rscope import brax as rscope_utils
+    from rscope import config as rscope_config
+
+    rscope_dir = logdir / "rscope"
+    rscope_dir.mkdir(parents=True, exist_ok=True)
+    rscope_config.set_base_path(rscope_dir)
 
     if not _VISION.value:
       rscope_env = registry.load(
