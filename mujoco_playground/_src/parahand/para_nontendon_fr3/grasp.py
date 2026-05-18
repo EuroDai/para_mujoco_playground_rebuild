@@ -3,6 +3,8 @@ from typing import Any, Dict, Optional, Union
 import jax
 import jax.numpy as jp
 import numpy as np
+# import os
+# import time
 from ml_collections import config_dict
 from mujoco import mjx
 
@@ -11,6 +13,77 @@ from mujoco_playground._src import mjx_env
 from mujoco_playground._src.mjx_env import State
 from mujoco_playground._src.parahand.para_nontendon_fr3 import base as para_nontendon_fr3_base
 from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
+
+# _NAN_REWARD_LIMIT = 20
+# _NAN_DUMP_DIR = os.environ.get("NAN_DUMP_DIR", "/tmp/nan_reward_dumps")
+# _nan_reward_counter = {"count": 0}
+
+# def _host_check_and_dump_nan(
+#     step,
+#     ctrl_before,
+#     ctrl_applied,
+#     action,
+#     prev_qpos,
+#     prev_qvel,
+#     qpos,
+#     qvel,
+#     xpos,
+#     site_xpos,
+#     site_xmat,
+#     cube_xpos,
+#     fingertip_site_xpos,
+#     rewards_dict,
+#     obs,
+#     reward,
+# ):
+#     payload = {
+#         "step": np.asarray(step),
+#         "ctrl_before": np.asarray(ctrl_before),
+#         "ctrl_applied": np.asarray(ctrl_applied),
+#         "action": np.asarray(action),
+#         "prev_qpos": np.asarray(prev_qpos),
+#         "prev_qvel": np.asarray(prev_qvel),
+#         "qpos": np.asarray(qpos),
+#         "qvel": np.asarray(qvel),
+#         "xpos": np.asarray(xpos),
+#         "site_xpos": np.asarray(site_xpos),
+#         "site_xmat": np.asarray(site_xmat),
+#         "cube_xpos": np.asarray(cube_xpos),
+#         "fingertip_site_xpos": np.asarray(fingertip_site_xpos),
+#         "obs": np.asarray(obs),
+#         "reward_total": np.asarray(reward),
+#     }
+#     payload.update({f"reward__{k}": np.asarray(v) for k, v in rewards_dict.items()})
+
+#     bad_keys = [
+#         k for k, arr in payload.items() if np.isnan(arr).any() or np.isinf(arr).any()
+#     ]
+#     if not bad_keys:
+#         return
+
+#     os.makedirs(_NAN_DUMP_DIR, exist_ok=True)
+#     idx = _nan_reward_counter["count"]
+#     _nan_reward_counter["count"] += 1
+#     ts = time.strftime("%Y%m%d-%H%M%S")
+#     path = os.path.join(_NAN_DUMP_DIR, f"nan_{idx:03d}_{ts}.npz")
+#     np.savez(path, **payload)
+
+#     step_value = int(np.asarray(step))
+#     print(
+#         f"[NaN-debug] step={step_value} bad_keys={bad_keys} dumped full tensors to {path}"
+#     )
+#     for k in sorted(bad_keys):
+#         arr = payload[k]
+#         print(
+#             f"  {k}: shape={arr.shape}, nan={int(np.isnan(arr).sum())}, inf={int(np.isinf(arr).sum())}"
+#         )
+
+#     print(f"[NaN-debug] cumulative count = {_nan_reward_counter['count']} / {_NAN_REWARD_LIMIT}")
+#     if _nan_reward_counter["count"] >= _NAN_REWARD_LIMIT:
+#         raise RuntimeError(
+#             f"NaN/Inf detected {_nan_reward_counter['count']} times "
+#             f"(limit={_NAN_REWARD_LIMIT}), aborting training."
+#         )
 
 def default_config() -> config_dict.ConfigDict:
     config = config_dict.create(
@@ -26,7 +99,7 @@ def default_config() -> config_dict.ConfigDict:
         naconmax=70 * 4096, 
         # naccdmax=240*8192, 
         njmax=1500,
-        history_len=5,
+        history_len=2,
         reward_config=config_dict.create(
             scales=config_dict.create(
                 fingertip_approach=1.0,
@@ -155,7 +228,10 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         delta_arm = action[:arm_n] * self._config.action_scale_arm
         delta_hand = action[arm_n:] * self._config.action_scale_hand
 
-        ctrl = state.data.ctrl
+        ctrl_before = state.data.ctrl
+        prev_qpos = state.data.qpos
+        prev_qvel = state.data.qvel
+        ctrl = ctrl_before
         ctrl = ctrl.at[self._arm_qids].add(delta_arm)
         ctrl = ctrl.at[self._hand_qids].add(delta_hand)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
@@ -170,12 +246,49 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         obs = self._get_obs(data, state.info)
 
         # 3. 计算 reward
-        rewards = self._get_reward(data, action, state.info, state.metrics, done)
-        rewards = {
-            k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
-        }
+        def _termination_only_rewards(_):
+            rewards = {
+                k: jp.zeros((), dtype=data.qpos.dtype)
+                for k in self._config.reward_config.scales.keys()
+            }
+            rewards["termination"] = jp.asarray(
+                self._config.reward_config.scales["termination"], dtype=data.qpos.dtype
+            )
+            return rewards
+
+        def _normal_rewards(_):
+            rewards = self._get_reward(data, action, state.info, state.metrics, done)
+            return {
+                k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+            }
+
+        rewards = jax.lax.cond(
+            done, _termination_only_rewards, _normal_rewards, operand=None
+        )
         reward = sum(rewards.values()) * self.dt
         done = done.astype(reward.dtype)
+
+        # NaN/Inf 调试：在 host 端对原始物理状态和派生量做真实检查
+        # jax.debug.callback(
+        #     _host_check_and_dump_nan,
+        #     state.info["step"],
+        #     ctrl_before,
+        #     ctrl,
+        #     action,
+        #     prev_qpos,
+        #     prev_qvel,
+        #     data.qpos,
+        #     data.qvel,
+        #     data.xpos,
+        #     data.site_xpos,
+        #     data.site_xmat,
+        #     data.xpos[self._cube_body_id],
+        #     data.site_xpos[self._fingertip_site_ids],
+        #     rewards,
+        #     obs,
+        #     reward,
+        #     ordered=True,
+        # )
 
         # 5. 更新 metrics
         metrics = state.metrics.copy()
@@ -195,14 +308,23 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         # 6. 更新 info
         info = state.info.copy()
         info["step"] = info["step"] + 1
-        info["last_act"] = action
+        info["last_act"] = jp.where(
+            done > 0,
+            jp.zeros_like(action),
+            action,
+        )
+        info["obs_history"] = jp.where(
+            done > 0,
+            jp.zeros_like(info["obs_history"]),
+            info["obs_history"],
+        )
 
         state = state.replace(
-            data=data, 
-            obs=obs, 
-            reward=reward, 
-            done=done, 
-            metrics=metrics, 
+            data=data,
+            obs=obs,
+            reward=reward,
+            done=done,
+            metrics=metrics,
             info=info
         )
         return state

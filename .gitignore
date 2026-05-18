@@ -9,3 +9,5 @@ logs/
 .mujoco_playground_asset_cache/
 wandb/
 rscope/
+trash/
+.vscode/
