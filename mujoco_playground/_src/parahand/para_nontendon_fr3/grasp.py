@@ -91,10 +91,10 @@ def default_config() -> config_dict.ConfigDict:
         sim_dt=0.002,        # 底层物理仿真频率 500Hz
         episode_length=256,  # 每个回合最大步数
         action_repeat=1,
-        action_scale_arm=0.02,    # 增量动作的缩放比例
-        action_scale_hand=0.04,    # 增量动作的缩放比例
-        v_limit_arm=0.02 / 0.1 * 6.4,
-        v_limit_hand=0.04 / 0.1 * 10,
+        action_scale_arm=0.1,    # 增量动作的缩放比例
+        action_scale_hand=0.1,    # 增量动作的缩放比例
+        v_limit_arm=0.1 / 0.1 * 6.4,
+        v_limit_hand=0.1 / 0.1 * 10,
         impl='warp', # 默认用warp，
         naconmax=70 * 4096, 
         # naccdmax=240*8192, 
@@ -106,8 +106,8 @@ def default_config() -> config_dict.ConfigDict:
                 good_finger_contact=0.5,
                 position_tracking=2.0,
                 success=10.0,
-                action_l2=-0.001,
-                action_rate_l2=-0.001,
+                action_l2=-0.005,
+                action_rate_l2=-0.005,
                 termination=-1.0,
             )
         ),
@@ -376,9 +376,21 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
             fingertip_poses.append(jp.concatenate([pos, quat]))
             fingertip_vels.append(jp.concatenate([linvel, angvel]))
 
-        fingertip_poses = jp.concatenate(fingertip_poses)
-        fingertip_vels = jp.concatenate(fingertip_vels)
-        fingertip_force = self.get_fingertip_cube_contact(data).reshape(-1)
+        fingertip_poses = jp.clip(
+            jp.concatenate(fingertip_poses),
+            -2.0,
+            2.0,
+        )
+        fingertip_vels = jp.clip(
+            jp.concatenate(fingertip_vels),
+            -2.0,
+            2.0,
+        )
+        fingertip_force = jp.clip(
+            self.get_fingertip_cube_contact(data).reshape(-1)
+            -20.0,
+            20.0,
+        )
         proprio_obs = jp.concatenate([
             joint_pos,
             joint_vel,
@@ -388,9 +400,11 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         ])
 
         # perception
-        cube_pointcloud = self.get_box_pointcloud(
-            data, num_points=256, box_geom_name="cube"
-        ).reshape(-1)
+        cube_pointcloud = jp.clip(
+            self.get_box_pointcloud(data, num_points=256, box_geom_name="cube").reshape(-1),
+            -2.0,
+            2.0,
+        )
         return jp.concatenate([policy_obs, proprio_obs, cube_pointcloud], axis=-1)
 
     def _get_reward(
