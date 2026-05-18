@@ -96,7 +96,7 @@ def default_config() -> config_dict.ConfigDict:
         v_limit_arm=0.04 / 0.1 * 6.4,
         v_limit_hand=0.04 / 0.1 * 10,
         impl='warp', # 默认用warp，
-        naconmax=70 * 4096, 
+        naconmax=30 * 4096, 
         # naccdmax=240*8192, 
         njmax=1500,
         history_len=2,
