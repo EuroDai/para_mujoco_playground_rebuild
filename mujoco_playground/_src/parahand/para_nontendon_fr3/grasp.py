@@ -111,7 +111,8 @@ def default_config() -> config_dict.ConfigDict:
                 termination=-1.0,
             )
         ),
-        contact_force_threshold = 1.0,
+        contact_force_threshold = 0.5,
+        num_points = 64,
     )
     return config
 
@@ -401,7 +402,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
 
         # perception
         cube_pointcloud = jp.clip(
-            self.get_box_pointcloud(data, num_points=256, box_geom_name="cube").reshape(-1),
+            self.get_box_pointcloud(data, num_points=self._config.num_points, box_geom_name="cube").reshape(-1),
             -2.0,
             2.0,
         )
