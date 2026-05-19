@@ -431,7 +431,7 @@ class ParaNontendonFR3Grasp(para_nontendon_fr3_base.ParaNontendonFR3Env):
         object_out_of_bound = (
             (cube_pos[0] < -1.0) | (cube_pos[0] > 1.0) |
             (cube_pos[1] < -1.0) | (cube_pos[1] > 1.0) |
-            (cube_pos[2] < 0.03)  | (cube_pos[2] > 2.0)
+            (cube_pos[2] < 0.0)  | (cube_pos[2] > 2.0)
         )
 
         abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm)
