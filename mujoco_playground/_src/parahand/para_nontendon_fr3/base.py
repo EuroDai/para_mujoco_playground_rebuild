@@ -194,9 +194,28 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
       ),
     )
 
-  def get_box_pointcloud(
+  def get_fingertip_kinematics(
     self,
     data: mjx.Data,
+    site_ids: jax.Array,
+    body_ids: jax.Array,
+  ) -> tuple[jax.Array, jax.Array]:
+    fingertip_pos = data.site_xpos[site_ids]
+    fingertip_quat = jax.vmap(self._mat_to_quat)(data.site_xmat[site_ids])
+
+    def _get_vel(pos: jax.Array, body_id: jax.Array) -> tuple[jax.Array, jax.Array]:
+      jacp, jacr = mjx.jac(self.mjx_model, data, pos, body_id)
+      return jacp.T @ data.qvel, jacr.T @ data.qvel
+
+    fingertip_linvel, fingertip_angvel = jax.vmap(_get_vel)(
+        fingertip_pos, body_ids
+    )
+    fingertip_pose = jp.concatenate([fingertip_pos, fingertip_quat], axis=-1)
+    fingertip_vel = jp.concatenate([fingertip_linvel, fingertip_angvel], axis=-1)
+    return fingertip_pose, fingertip_vel
+
+  def _sample_box_pointcloud(
+    self,
     num_points: int,
     box_geom_name: str = "cube",
   ) -> jax.Array:
@@ -219,7 +238,7 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
       face_fracs = num_points * face_areas / np.sum(face_areas) - face_counts
       face_counts[np.argsort(-face_fracs)[:remainder]] += 1
 
-    local_points = []
+    pointcloud = []
     face_extents = [
         (hy, hz),
         (hy, hz),
@@ -263,16 +282,25 @@ class ParaNontendonFR3Env(mjx_env.MjxEnv):
         face_points = np.stack([
             uv[:, 0] * hx, uv[:, 1] * hy, np.full(face_count, -hz)
         ], axis=-1)
-      local_points.append(face_points)
+      pointcloud.append(face_points)
 
-    if local_points:
-      local_points = jp.array(np.concatenate(local_points, axis=0), dtype=data.qpos.dtype)
-    else:
-      local_points = jp.zeros((0, 3), dtype=data.qpos.dtype)
+    if pointcloud:
+      return jp.array(np.concatenate(pointcloud, axis=0), dtype=jp.float32)
+    return jp.zeros((0, 3), dtype=jp.float32)
 
+  def get_box_pointcloud(
+    self,
+    data: mjx.Data,
+    num_points: int,
+    box_geom_name: str = "cube",
+    pointcloud: Optional[jax.Array] = None,
+  ) -> jax.Array:
+    geom_id = self.mj_model.geom(box_geom_name).id
+    if pointcloud is None:
+      pointcloud = self._sample_box_pointcloud(num_points, box_geom_name)
     geom_xmat = data.geom_xmat[geom_id]
     geom_xpos = data.geom_xpos[geom_id]
-    return local_points @ geom_xmat.T + geom_xpos
+    return pointcloud.astype(data.qpos.dtype) @ geom_xmat.T + geom_xpos
 
   def render(
     self,
