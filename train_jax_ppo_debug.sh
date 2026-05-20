@@ -2,10 +2,7 @@ python learning/train_jax_ppo.py \
   --env_name=ParaNontendonFR3Grasp \
   --use_wandb=False \
   --impl=warp \
-  --num_timesteps=5_000_000 \
-  --num_envs=1024 \
-  --num_evals=20 \
-  --rscope_envs=3 \
-  --deterministic_rscope=True \
-  --num_eval_envs=128 \
-  --playground_config_overrides='{"njmax":1000,"naconmax":92160}'
+  --num_timesteps=1_000_000 \
+  --num_envs=64 \
+  --run_evals=False \
+  --num_videos=0
