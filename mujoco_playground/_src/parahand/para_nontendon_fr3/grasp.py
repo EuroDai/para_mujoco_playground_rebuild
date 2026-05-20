@@ -89,12 +89,12 @@ def default_config() -> config_dict.ConfigDict:
     config = config_dict.create(
         ctrl_dt=0.02,        # 策略控制频率 50Hz
         sim_dt=0.002,        # 底层物理仿真频率 500Hz
-        episode_length=256,  # 每个回合最大步数
+        episode_length=512,  # 每个回合最大步数
         action_repeat=1,
         action_scale_arm=0.02,    # 增量动作的缩放比例
         action_scale_hand=0.04,    # 增量动作的缩放比例
-        v_limit_arm=0.04 / 0.1 * 6.4,
-        v_limit_hand=0.04 / 0.1 * 10,
+        v_limit_arm=6.4,
+        v_limit_hand=10,
         impl='warp', # 默认用warp，
         naconmax=30 * 4096, 
         # naccdmax=240*8192, 
