@@ -338,13 +338,28 @@ def main(argv):
   if _LOAD_CHECKPOINT_PATH.value is not None:
     # Convert to absolute path
     ckpt_path = epath.Path(_LOAD_CHECKPOINT_PATH.value).resolve()
-    if ckpt_path.is_dir():
-      latest_ckpts = list(ckpt_path.glob("*"))
-      latest_ckpts = [ckpt for ckpt in latest_ckpts if ckpt.is_dir()]
-      latest_ckpts.sort(key=lambda x: int(x.name))
-      latest_ckpt = latest_ckpts[-1]
-      restore_checkpoint_path = latest_ckpt
-      print(f"Restoring from: {restore_checkpoint_path}")
+    is_checkpoint_dir = ckpt_path.is_dir() and (
+        (ckpt_path / "_CHECKPOINT_METADATA").exists()
+        or (ckpt_path / "manifest.ocdbt").exists()
+    )
+    if is_checkpoint_dir:
+      restore_checkpoint_path = ckpt_path
+      print(f"Restoring from checkpoint: {restore_checkpoint_path}")
+    elif ckpt_path.is_dir():
+      latest_ckpts = [
+          ckpt
+          for ckpt in ckpt_path.glob("*")
+          if ckpt.is_dir()
+          and (
+              (ckpt / "_CHECKPOINT_METADATA").exists()
+              or (ckpt / "manifest.ocdbt").exists()
+          )
+      ]
+      if not latest_ckpts:
+        raise ValueError(f"No checkpoints found in: {ckpt_path}")
+      latest_ckpts.sort(key=lambda x: int(x.name.rsplit("_", 1)[-1]))
+      restore_checkpoint_path = latest_ckpts[-1]
+      print(f"Restoring from latest checkpoint: {restore_checkpoint_path}")
     else:
       restore_checkpoint_path = ckpt_path
       print(f"Restoring from checkpoint: {restore_checkpoint_path}")
@@ -476,6 +491,8 @@ def main(argv):
       policy_params_fn=policy_params_fn,
       eval_env=eval_env,
   )
+  if _PLAY_ONLY.value and _RSCOPE_ENVS.value:
+    policy_params_fn(0, make_inference_fn, params)
 
   print("Done training.")
   if len(times) > 1:
