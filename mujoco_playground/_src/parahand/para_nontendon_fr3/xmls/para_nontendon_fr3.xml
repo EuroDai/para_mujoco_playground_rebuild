@@ -3,7 +3,7 @@
     <compiler angle="radian" />
     <option integrator="implicitfast" />
     <default>
-        <geom condim='4' solref=".01 1" solimp=".99 .99 .01" contype="1" conaffinity="1"/>
+        <geom condim='4' solref=".01 1" solimp=".95 .99 .0005" contype="1" conaffinity="1"/>
         <default class="cube">
             <geom friction="1.0 0.1 0.002" contype="2" conaffinity="7" condim="4" />
         </default>
@@ -246,7 +246,7 @@
         <body name="cube" pos="-0.58 -0.25 0.03" quat="0 0 0 1" childclass="cube">
             <freejoint name="cube_freejoint" />
             <!-- <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/> -->
-            <geom name="cube" type="box" pos="0 0 0" size="0.03 0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/>
+            <geom name="cube" type="box" pos="0 0 0" size="0.03 0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" contype="2097152" conaffinity="2097151"/>
             <site name="cube_center" pos="0 0 0" group="4" />
         </body>
     </worldbody>
