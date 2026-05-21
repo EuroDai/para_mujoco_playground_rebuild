@@ -39,15 +39,15 @@
         </default>
         <default class="thumb_joint">
             <joint type="hinge" range="0 1.57" limited="true" armature="0.001" damping="4e-04" />
-            <position forcelimited="true" forcerange="-0.08 0.08" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
+            <position forcelimited="true" forcerange="-0.128 0.128" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
         </default>
         <default class="swing_joint">
             <joint type="hinge"  armature="0.001" damping="4e-04" range="-0.26 0.26" />
-            <position forcelimited="true" forcerange="-0.08 0.08" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
+            <position forcelimited="true" forcerange="-0.128 0.128" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
         </default>
         <default class="finger_joint">
             <joint type="hinge" range="0 1.57" limited="true" armature="0.001" damping="4e-04" />
-            <position forcelimited="true" forcerange="-0.08 0.08" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
+            <position forcelimited="true" forcerange="-0.128 0.128" ctrllimited="true" inheritrange="1" kp="10" dampratio="1.1"/>
         </default>
         <default class="touch_sensor">
             <site rgba="1 0 0 0.3" zaxis="1 0 0" size="0.006" pos="0.029 0.006 0"/>
