@@ -11,8 +11,8 @@ from mujoco import mjx
 # 引入基础环境类
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.mjx_env import State
-from mujoco_playground._src.parahand.para_nontendon_fr3 import base as para_nontendon_fr3_base
-from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
+from mujoco_playground._src.parahand.para_fr3 import base as para_fr3_base
+from mujoco_playground._src.parahand.para_fr3 import para_fr3_constants as consts
 
 # _NAN_REWARD_LIMIT = 20
 # _NAN_DUMP_DIR = os.environ.get("NAN_DUMP_DIR", "/tmp/nan_reward_dumps")
@@ -92,7 +92,8 @@ def default_config() -> config_dict.ConfigDict:
         episode_length=512,  # 每个回合最大步数
         action_repeat=1,
         action_scale_arm=0.02,    # 增量动作的缩放比例
-        action_scale_hand=0.04,    # 增量动作的缩放比例
+        action_scale_hand=0.04,
+        action_scale_tendon=0.005,
         v_limit_arm=6.4,
         v_limit_hand=10,
         impl='warp', # 默认用warp，
@@ -116,7 +117,7 @@ def default_config() -> config_dict.ConfigDict:
     )
     return config
 
-class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
+class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
     def __init__(
         self,
         config: config_dict.ConfigDict = default_config(),
@@ -136,8 +137,23 @@ class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
         self._init_qvel = jp.array(home_key.qvel, dtype=float)
         self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
         self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
+        self._arm_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.ARM_JOINTS])
+        self._hand_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.HAND_JOINTS])
+        self._finger_tendon_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.FINGER_TENDONS])
+        self._all_joint_ids = np.array([self._mj_model.joint(n).id for n in consts.ALL_JOINTS])
+        self._joint_lowers = self._mj_model.jnt_range[self._all_joint_ids, 0]
+        self._joint_uppers = self._mj_model.jnt_range[self._all_joint_ids, 1]
         self._arm_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ARM_JOINTS)
         self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.HAND_JOINTS)
+        self._finger_passive_joints_qids = mjx_env.get_qpos_ids(self.mj_model, consts.FINGER_PASSIVE_JOINTS)
+        self._arm_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.ARM_JOINTS)
+        self._hand_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.HAND_JOINTS)
+        self._finger_passive_joints_dqids = mjx_env.get_qvel_ids(
+            self.mj_model, consts.FINGER_PASSIVE_JOINTS
+        )
+        self._all_hand_dqids = mjx_env.get_qvel_ids(
+            self.mj_model, consts.HAND_JOINTS + consts.FINGER_PASSIVE_JOINTS
+        )
         self._all_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ALL_JOINTS)
         self._all_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.ALL_JOINTS)
         self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
@@ -158,12 +174,15 @@ class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
 
 
     def reset(self, rng: jax.Array) -> State:
-        rng, pos_rng = jax.random.split(rng)
+        rng, q_rng, ctrl_rng = jax.random.split(rng, 3)
 
-        q_noise = jax.random.normal(pos_rng, (self.mjx_model.nu,))
-        q_robot = jp.clip(self._default_pose + 0.05 * q_noise, self._lowers, self._uppers)
+        arm_q_noise = jax.random.normal(q_rng, (len(self._arm_qids),))
+        q_robot = self._default_pose.at[:len(self._arm_qids)].add(0.05 * arm_q_noise)
+        q_robot = jp.clip(q_robot, self._joint_lowers, self._joint_uppers)
 
-        ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
+        arm_ctrl_noise = jax.random.normal(ctrl_rng, (len(self._arm_act_ids),))
+        ctrl = self._init_ctrl.at[self._arm_act_ids].add(0.05 * arm_ctrl_noise)
+        ctrl = jp.clip(ctrl, self._lowers, self._uppers)
         
 
         '''
@@ -179,7 +198,6 @@ class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
         '''
         q_cube = self._default_cube_pose.copy()
         
-        ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
         q = jp.concatenate([q_robot, q_cube])
 
         data = mjx_env.make_data(
@@ -232,17 +250,17 @@ class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
 
         # 1. 更新 data
         # 执行一次动作
-        arm_n = len(self._arm_qids)
-
+        arm_n = len(self._arm_act_ids)
+        hand_n = len(self._hand_act_ids)
+        tendon_n = len(self._finger_tendon_act_ids)
         delta_arm = action[:arm_n] * self._config.action_scale_arm
-        delta_hand = action[arm_n:] * self._config.action_scale_hand
+        delta_hand = action[arm_n:arm_n+hand_n] * self._config.action_scale_hand
+        delta_tendons = action[arm_n+hand_n:arm_n+hand_n+tendon_n] * self._config.action_scale_tendon
 
-        ctrl_before = state.data.ctrl
-        prev_qpos = state.data.qpos
-        prev_qvel = state.data.qvel
-        ctrl = ctrl_before
-        ctrl = ctrl.at[self._arm_qids].add(delta_arm)
-        ctrl = ctrl.at[self._hand_qids].add(delta_hand)
+        ctrl = state.data.ctrl
+        ctrl = ctrl.at[self._arm_act_ids].add(delta_arm)
+        ctrl = ctrl.at[self._hand_act_ids].add(delta_hand)
+        ctrl = ctrl.at[self._finger_tendon_act_ids].add(delta_tendons)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
         data = mjx_env.step(
             self.mjx_model, state.data, ctrl, self.n_substeps
@@ -444,8 +462,8 @@ class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
             (cube_pos[2] < 0.0)  | (cube_pos[2] > 2.0)
         )
 
-        abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm)
-        abnormal_hand = jp.any(jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
+        abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_dqids]) > self._config.v_limit_arm)
+        abnormal_hand = jp.any(jp.abs(data.qvel[self._all_hand_dqids]) > self._config.v_limit_hand)
         abnormal_robot = abnormal_arm | abnormal_hand
 
         nans = (

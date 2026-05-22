@@ -59,7 +59,7 @@ def brax_ppo_config(
         value_obs_key="state",
     )
 
-  if env_name == "ParaFR3Grasp":
+  elif env_name == "ParaFR3Grasp":
     rl_config.num_timesteps = 2_000_000_000
     rl_config.num_evals = 100
     rl_config.num_minibatches = 4
