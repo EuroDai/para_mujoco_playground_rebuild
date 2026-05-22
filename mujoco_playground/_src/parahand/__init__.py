@@ -21,14 +21,17 @@ from mujoco import mjx
 
 from mujoco_playground._src import mjx_env
 from mujoco_playground._src.parahand.para_nontendon_fr3 import grasp as parahand_nontendon_fr3_grasp
+from mujoco_playground._src.parahand.para_fr3 import grasp as parahand_fr3_grasp
 
 
 _envs = {
     "ParaNontendonFR3Grasp": parahand_nontendon_fr3_grasp.ParaNontendonFR3Grasp,
+    "ParaFR3Grasp": parahand_fr3_grasp.ParaFR3Grasp,
 }
 
 _cfgs = {
     "ParaNontendonFR3Grasp": parahand_nontendon_fr3_grasp.default_config,
+    "ParaFR3Grasp": parahand_fr3_grasp.default_config,
 }
 
 _randomizer = {

@@ -58,6 +58,27 @@ def brax_ppo_config(
         policy_obs_key="state",
         value_obs_key="state",
     )
+
+  if env_name == "ParaFR3Grasp":
+    rl_config.num_timesteps = 2_000_000_000
+    rl_config.num_evals = 100
+    rl_config.num_minibatches = 4
+    rl_config.unroll_length = 32
+    rl_config.num_updates_per_batch = 5
+    rl_config.discounting = 0.99
+    rl_config.gae_lambda = 0.95
+    rl_config.learning_rate = 3e-4
+    rl_config.entropy_cost = 0.005
+    rl_config.desired_kl = 0.01
+    rl_config.max_grad_norm = 1.0
+    rl_config.num_envs = 4096
+    rl_config.batch_size = 1024
+    rl_config.network_factory = config_dict.create(
+        policy_hidden_layer_sizes=(512, 256, 128),
+        value_hidden_layer_sizes=(512, 256, 128),
+        policy_obs_key="state",
+        value_obs_key="state",
+    )
   else:
     raise ValueError(f"Unsupported env: {env_name}")
 

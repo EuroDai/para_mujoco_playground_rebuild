@@ -1,0 +1,526 @@
+from typing import Any, Dict, Optional, Union
+
+import jax
+import jax.numpy as jp
+import numpy as np
+# import os
+# import time
+from ml_collections import config_dict
+from mujoco import mjx
+
+# 引入基础环境类
+from mujoco_playground._src import mjx_env
+from mujoco_playground._src.mjx_env import State
+from mujoco_playground._src.parahand.para_nontendon_fr3 import base as para_nontendon_fr3_base
+from mujoco_playground._src.parahand.para_nontendon_fr3 import para_nontendon_fr3_constants as consts
+
+# _NAN_REWARD_LIMIT = 20
+# _NAN_DUMP_DIR = os.environ.get("NAN_DUMP_DIR", "/tmp/nan_reward_dumps")
+# _nan_reward_counter = {"count": 0}
+
+# def _host_check_and_dump_nan(
+#     step,
+#     ctrl_before,
+#     ctrl_applied,
+#     action,
+#     prev_qpos,
+#     prev_qvel,
+#     qpos,
+#     qvel,
+#     xpos,
+#     site_xpos,
+#     site_xmat,
+#     cube_xpos,
+#     fingertip_site_xpos,
+#     rewards_dict,
+#     obs,
+#     reward,
+# ):
+#     payload = {
+#         "step": np.asarray(step),
+#         "ctrl_before": np.asarray(ctrl_before),
+#         "ctrl_applied": np.asarray(ctrl_applied),
+#         "action": np.asarray(action),
+#         "prev_qpos": np.asarray(prev_qpos),
+#         "prev_qvel": np.asarray(prev_qvel),
+#         "qpos": np.asarray(qpos),
+#         "qvel": np.asarray(qvel),
+#         "xpos": np.asarray(xpos),
+#         "site_xpos": np.asarray(site_xpos),
+#         "site_xmat": np.asarray(site_xmat),
+#         "cube_xpos": np.asarray(cube_xpos),
+#         "fingertip_site_xpos": np.asarray(fingertip_site_xpos),
+#         "obs": np.asarray(obs),
+#         "reward_total": np.asarray(reward),
+#     }
+#     payload.update({f"reward__{k}": np.asarray(v) for k, v in rewards_dict.items()})
+
+#     bad_keys = [
+#         k for k, arr in payload.items() if np.isnan(arr).any() or np.isinf(arr).any()
+#     ]
+#     if not bad_keys:
+#         return
+
+#     os.makedirs(_NAN_DUMP_DIR, exist_ok=True)
+#     idx = _nan_reward_counter["count"]
+#     _nan_reward_counter["count"] += 1
+#     ts = time.strftime("%Y%m%d-%H%M%S")
+#     path = os.path.join(_NAN_DUMP_DIR, f"nan_{idx:03d}_{ts}.npz")
+#     np.savez(path, **payload)
+
+#     step_value = int(np.asarray(step))
+#     print(
+#         f"[NaN-debug] step={step_value} bad_keys={bad_keys} dumped full tensors to {path}"
+#     )
+#     for k in sorted(bad_keys):
+#         arr = payload[k]
+#         print(
+#             f"  {k}: shape={arr.shape}, nan={int(np.isnan(arr).sum())}, inf={int(np.isinf(arr).sum())}"
+#         )
+
+#     print(f"[NaN-debug] cumulative count = {_nan_reward_counter['count']} / {_NAN_REWARD_LIMIT}")
+#     if _nan_reward_counter["count"] >= _NAN_REWARD_LIMIT:
+#         raise RuntimeError(
+#             f"NaN/Inf detected {_nan_reward_counter['count']} times "
+#             f"(limit={_NAN_REWARD_LIMIT}), aborting training."
+#         )
+
+def default_config() -> config_dict.ConfigDict:
+    config = config_dict.create(
+        ctrl_dt=0.02,        # 策略控制频率 50Hz
+        sim_dt=0.002,        # 底层物理仿真频率 500Hz
+        episode_length=512,  # 每个回合最大步数
+        action_repeat=1,
+        action_scale_arm=0.02,    # 增量动作的缩放比例
+        action_scale_hand=0.04,    # 增量动作的缩放比例
+        v_limit_arm=6.4,
+        v_limit_hand=10,
+        impl='warp', # 默认用warp，
+        naconmax=30 * 4096, 
+        # naccdmax=240*8192, 
+        njmax=1500,
+        history_len=2,
+        reward_config=config_dict.create(
+            scales=config_dict.create(
+                fingertip_approach=1.0,
+                good_finger_contact=0.5,
+                position_tracking=2.0,
+                success=10.0,
+                action_l2=-0.005,
+                action_rate_l2=-0.005,
+                termination=-1.0,
+            )
+        ),
+        contact_force_threshold = 0.5,
+        num_points = 64,
+    )
+    return config
+
+class ParaFR3Grasp(para_nontendon_fr3_base.ParaFR3Env):
+    def __init__(
+        self,
+        config: config_dict.ConfigDict = default_config(),
+        config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
+    ):
+        super().__init__(
+            xml_path=consts.GRASP_XML.as_posix(),
+            config=config,
+            config_overrides=config_overrides,
+        )
+        self._post_init()
+        
+    def _post_init(self) -> None:
+        home_key = self._mj_model.keyframe("home")
+        self._init_q = jp.array(home_key.qpos, dtype=float)
+        self._init_ctrl = jp.array(home_key.ctrl, dtype=float)
+        self._init_qvel = jp.array(home_key.qvel, dtype=float)
+        self._lowers = self._mj_model.actuator_ctrlrange[:, 0]
+        self._uppers = self._mj_model.actuator_ctrlrange[:, 1]
+        self._arm_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ARM_JOINTS)
+        self._hand_qids = mjx_env.get_qpos_ids(self.mj_model, consts.HAND_JOINTS)
+        self._all_qids = mjx_env.get_qpos_ids(self.mj_model, consts.ALL_JOINTS)
+        self._all_dqids = mjx_env.get_qvel_ids(self.mj_model, consts.ALL_JOINTS)
+        self._cube_qids = mjx_env.get_qpos_ids(self.mj_model, ["cube_freejoint"])
+        self._cube_body_id = self._mj_model.body("cube").id
+        self._fingertip_tacs_ids = np.array([self._mj_model.geom(n).id for n in consts.FINGERTIP_TACS])
+        self._fingertip_site_ids = np.array([self._mj_model.site(n).id for n in consts.FINGERTIP_TIPS])
+        self._fingertip_body_ids = np.array([
+            self._mj_model.site_bodyid[site_id] for site_id in self._fingertip_site_ids
+        ])
+        self._floor_geom_id = self._mj_model.geom("floor").id
+        self._target_site_id = self._mj_model.site(consts.TARGET_SITE).id
+        self._default_pose = self._init_q[self._all_qids]
+        self._default_cube_pose = self._init_q[self._cube_qids]
+        self._cube_pointcloud = self._sample_box_pointcloud(
+            num_points=self._config.num_points,
+            box_geom_name="cube",
+        )
+
+
+    def reset(self, rng: jax.Array) -> State:
+        rng, pos_rng = jax.random.split(rng)
+
+        q_noise = jax.random.normal(pos_rng, (self.mjx_model.nu,))
+        q_robot = jp.clip(self._default_pose + 0.05 * q_noise, self._lowers, self._uppers)
+
+        ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
+        
+
+        '''
+        q_cube = self._default_cube_pose.copy()
+        q_cube = q_cube.at[:3].set(
+            jax.random.uniform(
+                cube_rng, (3,), minval=jp.array([-0.05, -0.05, 0.0]), maxval=jp.array([0.05, 0.05, 0.0])
+            ) 
+            + self._default_cube_pose[:3]
+        )
+
+        q_cube = q_cube.at[3:].set(para_nontendon_fr3_base.uniform_quat(cube_rng))
+        '''
+        q_cube = self._default_cube_pose.copy()
+        
+        ctrl = jp.clip(self._init_ctrl + 0.05 * q_noise, self._lowers, self._uppers)
+        q = jp.concatenate([q_robot, q_cube])
+
+        data = mjx_env.make_data(
+            self._mj_model,
+            qpos=q,
+            ctrl=ctrl,
+            qvel=self._init_qvel,
+            impl=self._mjx_model.impl.value,
+            naconmax=self._config.naconmax,
+            njmax=self._config.njmax,
+        )
+        reward, done = jp.zeros(2)
+        metrics = {}
+        for k in self._config.reward_config.scales.keys():
+            metrics[f"reward/{k}"] = jp.zeros(())
+
+        '''
+        for name in consts.ALL_JOINTS:
+            metrics[f"action/{name}"] = jp.zeros(())
+        '''
+            
+        for name in consts.FINGERTIP_TACS:
+            metrics[f"fingertip_force/{name}"] = jp.zeros(())
+        info = {
+            "rng": rng,
+            "step": 0,
+            "last_act": jp.zeros(self._mjx_model.nu),
+            "target_pos": data.site_xpos[self._target_site_id],
+        }
+        fingertip_force = self.get_fingertip_cube_contact(data)
+        single_obs = self._get_single_obs(data, info, fingertip_force)
+        info["obs_history"] = jp.zeros(
+            self._config.history_len * single_obs.size, dtype=single_obs.dtype
+        )
+        obs = self._get_obs(data, info, fingertip_force)
+
+        state = State(data, obs, reward, done, metrics, info)
+        return state
+
+    def step(self, state: State, action: jax.Array) -> State:
+        '''
+        step 函数更新场景，更新6个参数
+        1. data: 物理仿真数据
+        2. obs: 观测(joint_pos, cube_pos, fingertip_pos, last_act)
+        3. reward: 奖励(fingertip_approach, action_rate, termination)
+        4. done: 是否结束(fall_termination, nans)
+        5. metrics: 指标(reward/fingertip_approach, reward/action_rate, reward/termination)
+        6. info: 信息(rng, step, last_act)
+        '''
+
+        # 1. 更新 data
+        # 执行一次动作
+        arm_n = len(self._arm_qids)
+
+        delta_arm = action[:arm_n] * self._config.action_scale_arm
+        delta_hand = action[arm_n:] * self._config.action_scale_hand
+
+        ctrl_before = state.data.ctrl
+        prev_qpos = state.data.qpos
+        prev_qvel = state.data.qvel
+        ctrl = ctrl_before
+        ctrl = ctrl.at[self._arm_qids].add(delta_arm)
+        ctrl = ctrl.at[self._hand_qids].add(delta_hand)
+        ctrl = jp.clip(ctrl, self._lowers, self._uppers)
+        data = mjx_env.step(
+            self.mjx_model, state.data, ctrl, self.n_substeps
+        )
+        
+        fingertip_force = self.get_fingertip_cube_contact(data)
+
+        # 4. 计算 done
+        done = self._get_termination(data, state.info)
+
+        # 2. 计算 obs
+        obs = self._get_obs(data, state.info, fingertip_force)
+
+        # 3. 计算 reward
+        def _termination_only_rewards(_):
+            rewards = {
+                k: jp.zeros((), dtype=data.qpos.dtype)
+                for k in self._config.reward_config.scales.keys()
+            }
+            rewards["termination"] = jp.asarray(
+                self._config.reward_config.scales["termination"], dtype=data.qpos.dtype
+            )
+            return rewards
+
+        def _normal_rewards(_):
+            rewards = self._get_reward(
+                data, action, state.info, state.metrics, done, fingertip_force
+            )
+            return {
+                k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
+            }
+
+        rewards = jax.lax.cond(
+            done, _termination_only_rewards, _normal_rewards, operand=None
+        )
+        reward = sum(rewards.values()) * self.dt
+        done = done.astype(reward.dtype)
+
+        # NaN/Inf 调试：在 host 端对原始物理状态和派生量做真实检查
+        # jax.debug.callback(
+        #     _host_check_and_dump_nan,
+        #     state.info["step"],
+        #     ctrl_before,
+        #     ctrl,
+        #     action,
+        #     prev_qpos,
+        #     prev_qvel,
+        #     data.qpos,
+        #     data.qvel,
+        #     data.xpos,
+        #     data.site_xpos,
+        #     data.site_xmat,
+        #     data.xpos[self._cube_body_id],
+        #     data.site_xpos[self._fingertip_site_ids],
+        #     rewards,
+        #     obs,
+        #     reward,
+        #     ordered=True,
+        # )
+
+        # 5. 更新 metrics
+        metrics = state.metrics.copy()
+        for k, v in rewards.items():
+            metrics[f"reward/{k}"] = v
+
+        fingertip_force_norm = jp.linalg.norm(fingertip_force, axis=-1)
+        for name, force in zip(consts.FINGERTIP_TACS, fingertip_force_norm):
+            metrics[f"fingertip_force/{name}"] = force
+
+        '''
+        for name, d in zip(consts.ALL_JOINTS, delta):
+            metrics[f"action/{name}"] = d
+        '''
+
+        # 6. 更新 info
+        info = state.info.copy()
+        info["step"] = info["step"] + 1
+        info["last_act"] = jp.where(
+            done > 0,
+            jp.zeros_like(action),
+            action,
+        )
+        info["obs_history"] = jp.where(
+            done > 0,
+            jp.zeros_like(info["obs_history"]),
+            info["obs_history"],
+        )
+
+        state = state.replace(
+            data=data,
+            obs=obs,
+            reward=reward,
+            done=done,
+            metrics=metrics,
+            info=info
+        )
+        return state
+
+    def _get_obs(
+        self, data: mjx.Data, info: dict, fingertip_force: jax.Array
+    ) -> jax.Array:
+        obs = self._get_single_obs(data, info, fingertip_force)
+        obs_history = jp.roll(info["obs_history"], obs.size).at[:obs.size].set(obs)
+        info["obs_history"] = obs_history
+        return obs_history
+
+    def _get_single_obs(
+        self, data: mjx.Data, info: dict, fingertip_force: jax.Array
+    ) -> jax.Array:
+        '''
+        观测函数
+        policy:
+        1. cube_pose:           方块完整位姿(x, y, z, qw, qx, qy, qz)
+        2. target_pos:          目标位置(x, y, z)
+        3. last_act:            上一个动作
+        proprio:
+        1. joint_pos:           关节角度
+        2. joint_vel:           关节速度
+        3. 指尖状态：
+            fingertip_poses:    指尖位姿
+            fingertip_vels:     指尖线速度、角速度
+        4. fingertip_force:     指尖力
+        perception:
+        1. cube_pointcloud:     方块点云
+        '''
+        # policy
+        target_pos = data.site_xpos[self._target_site_id]
+        last_act = info["last_act"]
+        policy_obs = jp.concatenate([target_pos, last_act])
+
+        # proprio
+        joint_pos = data.qpos[self._all_qids]
+        joint_vel = data.qvel[self._all_dqids]
+        fingertip_poses, fingertip_vels = self.get_fingertip_kinematics(
+            data,
+            jp.asarray(self._fingertip_site_ids),
+            jp.asarray(self._fingertip_body_ids),
+        )
+        fingertip_poses = jp.clip(
+            fingertip_poses.reshape(-1),
+            -2.0,
+            2.0,
+        )
+        fingertip_vels = jp.clip(
+            fingertip_vels.reshape(-1),
+            -2.0,
+            2.0,
+        )
+        fingertip_force = jp.clip(
+            fingertip_force.reshape(-1),
+            -20.0,
+            20.0,
+        )
+        proprio_obs = jp.concatenate([
+            joint_pos,
+            joint_vel,
+            fingertip_poses,
+            fingertip_vels,
+            fingertip_force,
+        ])
+
+        # perception
+        cube_pointcloud = jp.clip(
+            self.get_box_pointcloud(
+                data,
+                num_points=self._config.num_points,
+                box_geom_name="cube",
+                pointcloud=self._cube_pointcloud,
+            ).reshape(-1),
+            -2.0,
+            2.0,
+        )
+        return jp.concatenate([policy_obs, proprio_obs, cube_pointcloud], axis=-1)
+
+    def _get_reward(
+        self, data: mjx.Data,
+        action: jax.Array, info: dict,
+        metrics: dict,
+        done: jax.Array,
+        fingertip_force: jax.Array,
+    ) -> dict:
+        del metrics, done
+        return {
+            "fingertip_approach": self._reward_fingertip_approach(data),
+            "good_finger_contact": self._reward_good_finger_contact(fingertip_force),
+            "position_tracking": self._reward_position_tracking(data, fingertip_force),
+            "success": self._reward_success(data),
+            "action_l2": self._cost_action_l2(action),
+            "action_rate_l2": self._cost_action_rate_l2(action, info["last_act"]),
+            "termination": self._get_termination(data, info),
+        }
+
+    def _get_termination(self, data: mjx.Data, info: dict) -> jax.Array:
+        del info
+        cube_pos = data.xpos[self._cube_body_id]
+        object_out_of_bound = (
+            (cube_pos[0] < -1.0) | (cube_pos[0] > 1.0) |
+            (cube_pos[1] < -1.0) | (cube_pos[1] > 1.0) |
+            (cube_pos[2] < 0.0)  | (cube_pos[2] > 2.0)
+        )
+
+        abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_qids]) > self._config.v_limit_arm)
+        abnormal_hand = jp.any(jp.abs(data.qvel[self._hand_qids]) > self._config.v_limit_hand)
+        abnormal_robot = abnormal_arm | abnormal_hand
+
+        nans = (
+            jp.any(jp.isnan(data.qpos)) |
+            jp.any(jp.isnan(data.qvel)) |
+            jp.any(jp.isnan(data.xpos)) |
+            jp.any(jp.isnan(data.site_xpos))
+        )
+        return object_out_of_bound | abnormal_robot | nans
+
+    '''定义一些reward函数'''
+    def _reward_fingertip_approach(self, data: mjx.Data) -> jax.Array:
+        '''
+        奖励：指尖靠近物体
+        '''
+        cube_pos = data.xpos[self._cube_body_id]
+        fingertip_pos = data.site_xpos[self._fingertip_site_ids]
+        object_ee_distance = jp.max(jp.linalg.norm(fingertip_pos - cube_pos, axis=1))
+        return 1 - jp.tanh(object_ee_distance / 0.15)
+
+    def _reward_good_finger_contact(self, fingertip_force: jax.Array) -> jax.Array:
+        '''
+        奖励：指尖接触物体
+        '''
+        contact_force_norm = jp.linalg.norm(fingertip_force, axis=-1)
+        thumb_force = contact_force_norm[0]
+        index_force = contact_force_norm[1]
+        middle_force = contact_force_norm[2]
+        ring_force = contact_force_norm[3]
+        little_force = contact_force_norm[4]
+        good_finger_contact = (
+            (thumb_force > self._config.contact_force_threshold) &
+            (
+                (index_force > self._config.contact_force_threshold) |
+                (middle_force > self._config.contact_force_threshold) |
+                (ring_force > self._config.contact_force_threshold) |
+                (little_force > self._config.contact_force_threshold)
+            )
+        )
+        return good_finger_contact
+
+    def _reward_position_tracking(
+        self, data: mjx.Data, fingertip_force: jax.Array
+    ) -> jax.Array:
+        '''
+        奖励：位置跟踪
+        '''
+        target_pos = data.site_xpos[self._target_site_id]
+        cube_pos = data.xpos[self._cube_body_id]
+        distance = jp.linalg.norm(target_pos - cube_pos)
+        has_contact = jp.any(self._reward_good_finger_contact(fingertip_force))
+        return (1 - jp.tanh(distance / 0.4)) * has_contact
+
+    def _reward_success(self, data: mjx.Data) -> jax.Array:
+        '''
+        奖励：成功
+        '''
+        target_pos = data.site_xpos[self._target_site_id]
+        cube_pos = data.xpos[self._cube_body_id]
+        distance = jp.linalg.norm(target_pos - cube_pos)
+        return jp.square((1 - jp.tanh(distance / 0.1)))
+
+    def _cost_action_l2(self, action: jax.Array) -> jax.Array:
+        '''
+        惩罚：动作幅度
+        '''
+        return jp.sum(jp.square(action))
+
+    def _cost_action_rate_l2(
+        self, 
+        action: jax.Array, 
+        last_action: jax.Array
+    ) -> jax.Array:
+        '''
+        惩罚：动作变化率
+        '''
+        return jp.sum(jp.square(action - last_action))
+
