@@ -114,6 +114,7 @@ def default_config() -> config_dict.ConfigDict:
         ),
         contact_force_threshold = 0.5,
         num_points = 64,
+        pointcloud_pool_points = 256,
     )
     return config
 
@@ -167,14 +168,14 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         self._target_site_id = self._mj_model.site(consts.TARGET_SITE).id
         self._default_pose = self._init_q[self._all_qids]
         self._default_cube_pose = self._init_q[self._cube_qids]
-        self._cube_pointcloud = self._sample_box_pointcloud(
-            num_points=self._config.num_points,
+        self._cube_pointcloud_pool = self._sample_box_pointcloud(
+            num_points=self._config.pointcloud_pool_points,
             box_geom_name="cube",
         )
 
 
     def reset(self, rng: jax.Array) -> State:
-        rng, q_rng, ctrl_rng = jax.random.split(rng, 3)
+        rng, q_rng, ctrl_rng, cube_rng = jax.random.split(rng, 4)
 
         arm_q_noise = jax.random.normal(q_rng, (len(self._arm_qids),))
         q_robot = self._default_pose.at[:len(self._arm_qids)].add(0.05 * arm_q_noise)
@@ -183,20 +184,21 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         arm_ctrl_noise = jax.random.normal(ctrl_rng, (len(self._arm_act_ids),))
         ctrl = self._init_ctrl.at[self._arm_act_ids].add(0.05 * arm_ctrl_noise)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
-        
 
-        '''
+
         q_cube = self._default_cube_pose.copy()
         q_cube = q_cube.at[:3].set(
-            jax.random.uniform(
-                cube_rng, (3,), minval=jp.array([-0.05, -0.05, 0.0]), maxval=jp.array([0.05, 0.05, 0.0])
-            ) 
-            + self._default_cube_pose[:3]
+            self._default_cube_pose[:3]
+            + jax.random.uniform(
+                cube_rng,
+                (3,),
+                minval=jp.array([-0.1, -0.1, 0.0]),
+                maxval=jp.array([0.1, 0.1, 0.0]),
+            )
         )
 
-        q_cube = q_cube.at[3:].set(para_nontendon_fr3_base.uniform_quat(cube_rng))
-        '''
-        q_cube = self._default_cube_pose.copy()
+        q_cube = q_cube.at[3:].set(para_fr3_base.uniform_quat(q_rng))
+        # q_cube = self._default_cube_pose.copy()
         
         q = jp.concatenate([q_robot, q_cube])
 
@@ -214,11 +216,9 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         for k in self._config.reward_config.scales.keys():
             metrics[f"reward/{k}"] = jp.zeros(())
 
-        '''
-        for name in consts.ALL_JOINTS:
+        for name in consts.ARM_JOINTS + consts.HAND_JOINTS + consts.FINGER_TENDONS:
             metrics[f"action/{name}"] = jp.zeros(())
-        '''
-            
+
         for name in consts.FINGERTIP_TACS:
             metrics[f"fingertip_force/{name}"] = jp.zeros(())
         info = {
@@ -330,10 +330,11 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         for name, force in zip(consts.FINGERTIP_TACS, fingertip_force_norm):
             metrics[f"fingertip_force/{name}"] = force
 
-        '''
-        for name, d in zip(consts.ALL_JOINTS, delta):
-            metrics[f"action/{name}"] = d
-        '''
+        for name, a in zip(
+            consts.ARM_JOINTS + consts.HAND_JOINTS + consts.FINGER_TENDONS,
+            action,
+        ):
+            metrics[f"action/{name}"] = a
 
         # 6. 更新 info
         info = state.info.copy()
@@ -423,13 +424,23 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         ])
 
         # perception
+        cube_pointcloud = self.get_box_pointcloud(
+            data,
+            num_points=self._config.pointcloud_pool_points,
+            box_geom_name="cube",
+            pointcloud=self._cube_pointcloud_pool,
+        )
+        rng, pointcloud_rng = jax.random.split(info["rng"])
+        info["rng"] = rng
+        point_ids = jax.random.permutation(
+            pointcloud_rng, cube_pointcloud.shape[0]
+        )[:self._config.num_points]
+        cube_pointcloud = cube_pointcloud[point_ids]
+        sort_ids = jp.lexsort(
+            (cube_pointcloud[:, 2], cube_pointcloud[:, 1], cube_pointcloud[:, 0])
+        )
         cube_pointcloud = jp.clip(
-            self.get_box_pointcloud(
-                data,
-                num_points=self._config.num_points,
-                box_geom_name="cube",
-                pointcloud=self._cube_pointcloud,
-            ).reshape(-1),
+            cube_pointcloud[sort_ids].reshape(-1),
             -2.0,
             2.0,
         )

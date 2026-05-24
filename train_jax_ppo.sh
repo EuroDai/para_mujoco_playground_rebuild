@@ -1,7 +1,8 @@
 python learning/train_jax_ppo.py \
-  --env_name=ParaNontendonFR3Grasp \
+  --env_name=ParaFR3Grasp \
   --use_wandb=True \
   --impl=warp \
   --num_videos=3 \
   --rscope_envs=3 \
-  --deterministic_rscope=True
+  --deterministic_rscope=True \
+  --seed=42

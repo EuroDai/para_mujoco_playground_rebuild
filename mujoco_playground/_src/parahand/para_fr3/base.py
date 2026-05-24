@@ -338,7 +338,7 @@ class ParaFR3Env(mjx_env.MjxEnv):
 
 def uniform_quat(rng: jax.Array) -> jax.Array:
   """Generate a random quaternion from a uniform distribution."""
-  theta = jax.random.uniform(rng, (), minval=0.0, maxval=2 * jp.pi)
+  theta = jax.random.uniform(rng, (), minval=0.0, maxval=0.5 * jp.pi)
   return jp.array([
       jp.cos(theta / 2),
       0.0,
