@@ -14,76 +14,6 @@ from mujoco_playground._src.mjx_env import State
 from mujoco_playground._src.parahand.para_fr3 import base as para_fr3_base
 from mujoco_playground._src.parahand.para_fr3 import para_fr3_constants as consts
 
-# _NAN_REWARD_LIMIT = 20
-# _NAN_DUMP_DIR = os.environ.get("NAN_DUMP_DIR", "/tmp/nan_reward_dumps")
-# _nan_reward_counter = {"count": 0}
-
-# def _host_check_and_dump_nan(
-#     step,
-#     ctrl_before,
-#     ctrl_applied,
-#     action,
-#     prev_qpos,
-#     prev_qvel,
-#     qpos,
-#     qvel,
-#     xpos,
-#     site_xpos,
-#     site_xmat,
-#     cube_xpos,
-#     fingertip_site_xpos,
-#     rewards_dict,
-#     obs,
-#     reward,
-# ):
-#     payload = {
-#         "step": np.asarray(step),
-#         "ctrl_before": np.asarray(ctrl_before),
-#         "ctrl_applied": np.asarray(ctrl_applied),
-#         "action": np.asarray(action),
-#         "prev_qpos": np.asarray(prev_qpos),
-#         "prev_qvel": np.asarray(prev_qvel),
-#         "qpos": np.asarray(qpos),
-#         "qvel": np.asarray(qvel),
-#         "xpos": np.asarray(xpos),
-#         "site_xpos": np.asarray(site_xpos),
-#         "site_xmat": np.asarray(site_xmat),
-#         "cube_xpos": np.asarray(cube_xpos),
-#         "fingertip_site_xpos": np.asarray(fingertip_site_xpos),
-#         "obs": np.asarray(obs),
-#         "reward_total": np.asarray(reward),
-#     }
-#     payload.update({f"reward__{k}": np.asarray(v) for k, v in rewards_dict.items()})
-
-#     bad_keys = [
-#         k for k, arr in payload.items() if np.isnan(arr).any() or np.isinf(arr).any()
-#     ]
-#     if not bad_keys:
-#         return
-
-#     os.makedirs(_NAN_DUMP_DIR, exist_ok=True)
-#     idx = _nan_reward_counter["count"]
-#     _nan_reward_counter["count"] += 1
-#     ts = time.strftime("%Y%m%d-%H%M%S")
-#     path = os.path.join(_NAN_DUMP_DIR, f"nan_{idx:03d}_{ts}.npz")
-#     np.savez(path, **payload)
-
-#     step_value = int(np.asarray(step))
-#     print(
-#         f"[NaN-debug] step={step_value} bad_keys={bad_keys} dumped full tensors to {path}"
-#     )
-#     for k in sorted(bad_keys):
-#         arr = payload[k]
-#         print(
-#             f"  {k}: shape={arr.shape}, nan={int(np.isnan(arr).sum())}, inf={int(np.isinf(arr).sum())}"
-#         )
-
-#     print(f"[NaN-debug] cumulative count = {_nan_reward_counter['count']} / {_NAN_REWARD_LIMIT}")
-#     if _nan_reward_counter["count"] >= _NAN_REWARD_LIMIT:
-#         raise RuntimeError(
-#             f"NaN/Inf detected {_nan_reward_counter['count']} times "
-#             f"(limit={_NAN_REWARD_LIMIT}), aborting training."
-#         )
 
 def default_config() -> config_dict.ConfigDict:
     config = config_dict.create(
@@ -92,8 +22,8 @@ def default_config() -> config_dict.ConfigDict:
         episode_length=512,  # 每个回合最大步数
         action_repeat=1,
         action_scale_arm=0.02,    # 增量动作的缩放比例
-        action_scale_hand=0.04,
-        action_scale_tendon=0.005,
+        action_scale_hand=0.01,
+        action_scale_tendon=0.000,
         v_limit_arm=6.4,
         v_limit_hand=10,
         impl='warp', # 默认用warp，
@@ -298,28 +228,6 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         )
         reward = sum(rewards.values()) * self.dt
         done = done.astype(reward.dtype)
-
-        # NaN/Inf 调试：在 host 端对原始物理状态和派生量做真实检查
-        # jax.debug.callback(
-        #     _host_check_and_dump_nan,
-        #     state.info["step"],
-        #     ctrl_before,
-        #     ctrl,
-        #     action,
-        #     prev_qpos,
-        #     prev_qvel,
-        #     data.qpos,
-        #     data.qvel,
-        #     data.xpos,
-        #     data.site_xpos,
-        #     data.site_xmat,
-        #     data.xpos[self._cube_body_id],
-        #     data.site_xpos[self._fingertip_site_ids],
-        #     rewards,
-        #     obs,
-        #     reward,
-        #     ordered=True,
-        # )
 
         # 5. 更新 metrics
         metrics = state.metrics.copy()
