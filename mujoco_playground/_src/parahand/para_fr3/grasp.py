@@ -22,8 +22,8 @@ def default_config() -> config_dict.ConfigDict:
         episode_length=512,  # 每个回合最大步数
         action_repeat=1,
         action_scale_arm=0.02,    # 增量动作的缩放比例
-        action_scale_hand=0.01,
-        action_scale_tendon=0.000,
+        action_scale_hand=0.03,
+        action_scale_tendon=0.0005,
         v_limit_arm=6.4,
         v_limit_hand=10,
         impl='warp', # 默认用warp，
