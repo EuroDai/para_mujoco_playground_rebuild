@@ -71,6 +71,7 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         self._arm_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.ARM_JOINTS])
         self._hand_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.HAND_JOINTS])
         self._finger_tendon_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.FINGER_TENDONS])
+        self._finger_tendon_ids = np.array([self._mj_model.tendon(n).id for n in consts.FINGER_TENDONS])
         self._all_joint_ids = np.array([self._mj_model.joint(n).id for n in consts.ALL_JOINTS])
         self._joint_lowers = self._mj_model.jnt_range[self._all_joint_ids, 0]
         self._joint_uppers = self._mj_model.jnt_range[self._all_joint_ids, 1]
@@ -158,9 +159,15 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             "target_pos": data.site_xpos[self._target_site_id],
         }
         fingertip_force = self.get_fingertip_cube_contact(data)
-        single_obs = self._get_single_obs(data, info, fingertip_force)
+        single_obs, single_privileged_obs = self._get_single_obs(
+            data, info, fingertip_force
+        )
         info["obs_history"] = jp.zeros(
             self._config.history_len * single_obs.size, dtype=single_obs.dtype
+        )
+        info["privileged_obs_history"] = jp.zeros(
+            self._config.history_len * single_privileged_obs.size,
+            dtype=single_privileged_obs.dtype,
         )
         obs = self._get_obs(data, info, fingertip_force)
 
@@ -257,6 +264,11 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             jp.zeros_like(info["obs_history"]),
             info["obs_history"],
         )
+        info["privileged_obs_history"] = jp.where(
+            done > 0,
+            jp.zeros_like(info["privileged_obs_history"]),
+            info["privileged_obs_history"],
+        )
 
         state = state.replace(
             data=data,
@@ -270,15 +282,22 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
 
     def _get_obs(
         self, data: mjx.Data, info: dict, fingertip_force: jax.Array
-    ) -> jax.Array:
-        obs = self._get_single_obs(data, info, fingertip_force)
-        obs_history = jp.roll(info["obs_history"], obs.size).at[:obs.size].set(obs)
-        info["obs_history"] = obs_history
-        return obs_history
+    ) -> mjx_env.Observation:
+        state, privileged_state = self._get_single_obs(data, info, fingertip_force)
+        state_history = jp.roll(info["obs_history"], state.size).at[:state.size].set(state)
+        privileged_state_history = jp.roll(
+            info["privileged_obs_history"], privileged_state.size
+        ).at[:privileged_state.size].set(privileged_state)
+        info["obs_history"] = state_history
+        info["privileged_obs_history"] = privileged_state_history
+        return {
+            "state": state_history,
+            "privileged_state": privileged_state_history,
+        }
 
     def _get_single_obs(
         self, data: mjx.Data, info: dict, fingertip_force: jax.Array
-    ) -> jax.Array:
+    ) -> tuple[jax.Array, jax.Array]:
         '''
         观测函数
         policy:
@@ -301,8 +320,18 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         policy_obs = jp.concatenate([target_pos, last_act])
 
         # proprio
-        joint_pos = data.qpos[self._all_qids]
-        joint_vel = data.qvel[self._all_dqids]
+        active_joint_pos = jp.concatenate([
+            data.qpos[self._arm_qids],
+            data.qpos[self._hand_qids],
+        ])
+        passive_joint_pos = data.qpos[self._finger_passive_joints_qids]
+        tendon_pos = jp.clip(data.ten_length[self._finger_tendon_ids], -2.0, 2.0)
+        active_joint_vel = jp.concatenate([
+            data.qvel[self._arm_dqids],
+            data.qvel[self._hand_dqids],
+        ])
+        passive_joint_vel = data.qvel[self._finger_passive_joints_dqids]
+        tendon_vel = jp.clip(data.ten_velocity[self._finger_tendon_ids], -2.0, 2.0)
         fingertip_poses, fingertip_vels = self.get_fingertip_kinematics(
             data,
             jp.asarray(self._fingertip_site_ids),
@@ -324,10 +353,10 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             20.0,
         )
         proprio_obs = jp.concatenate([
-            joint_pos,
-            joint_vel,
-            fingertip_poses,
-            fingertip_vels,
+            active_joint_pos,
+            tendon_pos,
+            active_joint_vel,
+            tendon_vel,
             fingertip_force,
         ])
 
@@ -352,7 +381,17 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             -2.0,
             2.0,
         )
-        return jp.concatenate([policy_obs, proprio_obs, cube_pointcloud], axis=-1)
+
+        privileged = jp.concatenate([
+            passive_joint_pos, 
+            passive_joint_vel,
+            fingertip_poses,
+            fingertip_vels,
+        ], axis=-1)
+
+        state = jp.concatenate([policy_obs, proprio_obs, cube_pointcloud], axis=-1)
+        privileged_state = jp.concatenate([state, privileged], axis=-1)
+        return state, privileged_state
 
     def _get_reward(
         self, data: mjx.Data,
