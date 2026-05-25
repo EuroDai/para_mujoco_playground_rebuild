@@ -158,7 +158,8 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             "last_act": jp.zeros(self._mjx_model.nu),
             "target_pos": data.site_xpos[self._target_site_id],
         }
-        fingertip_force = self.get_fingertip_cube_contact(data)
+        contact_data = self._get_contact_data(data)
+        fingertip_force = self.get_fingertip_cube_contact(data, contact_data)
         single_obs, single_privileged_obs = self._get_single_obs(
             data, info, fingertip_force
         )
@@ -203,10 +204,22 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             self.mjx_model, state.data, ctrl, self.n_substeps
         )
         
-        fingertip_force = self.get_fingertip_cube_contact(data)
+        contact_data = self._get_contact_data(data)
+        fingertip_force = self.get_fingertip_cube_contact(data, contact_data)
+        adjacent_tip_force_norms = self.get_adjacent_fingertip_contact_force_norms(
+            data, contact_data
+        )
+        arm_floor_collision = self.has_geom_floor_contact(
+            data, ("forearm_collision_1", "wrist2_collision_2"), contact_data
+        )
 
         # 4. 计算 done
-        done = self._get_termination(data, state.info)
+        done = self._get_termination(
+            data,
+            state.info,
+            adjacent_tip_force_norms=adjacent_tip_force_norms,
+            arm_floor_collision=arm_floor_collision,
+        )
 
         # 2. 计算 obs
         obs = self._get_obs(data, state.info, fingertip_force)
@@ -400,7 +413,7 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         done: jax.Array,
         fingertip_force: jax.Array,
     ) -> dict:
-        del metrics, done
+        del metrics
         return {
             "fingertip_approach": self._reward_fingertip_approach(data),
             "good_finger_contact": self._reward_good_finger_contact(fingertip_force),
@@ -408,10 +421,16 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             "success": self._reward_success(data),
             "action_l2": self._cost_action_l2(action),
             "action_rate_l2": self._cost_action_rate_l2(action, info["last_act"]),
-            "termination": self._get_termination(data, info),
+            "termination": jp.asarray(done, dtype=data.qpos.dtype),
         }
 
-    def _get_termination(self, data: mjx.Data, info: dict) -> jax.Array:
+    def _get_termination(
+        self,
+        data: mjx.Data,
+        info: dict,
+        adjacent_tip_force_norms: Optional[jax.Array] = None,
+        arm_floor_collision: Optional[jax.Array] = None,
+    ) -> jax.Array:
         del info
         cube_pos = data.xpos[self._cube_body_id]
         object_out_of_bound = (
@@ -424,13 +443,28 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         abnormal_hand = jp.any(jp.abs(data.qvel[self._all_hand_dqids]) > self._config.v_limit_hand)
         abnormal_robot = abnormal_arm | abnormal_hand
 
+        if adjacent_tip_force_norms is None:
+            adjacent_tip_force_norms = self.get_adjacent_fingertip_contact_force_norms(data)
+        adjacent_tip_collision = jp.any(adjacent_tip_force_norms > 0.05)
+
+        if arm_floor_collision is None:
+            arm_floor_collision = self.has_geom_floor_contact(
+                data, ("forearm_collision_1", "wrist2_collision_2")
+            )
+
         nans = (
             jp.any(jp.isnan(data.qpos)) |
             jp.any(jp.isnan(data.qvel)) |
             jp.any(jp.isnan(data.xpos)) |
             jp.any(jp.isnan(data.site_xpos))
         )
-        return object_out_of_bound | abnormal_robot | nans
+        return (
+            object_out_of_bound
+            | abnormal_robot
+            | adjacent_tip_collision
+            | arm_floor_collision
+            | nans
+        )
 
     '''定义一些reward函数'''
     def _reward_fingertip_approach(self, data: mjx.Data) -> jax.Array:

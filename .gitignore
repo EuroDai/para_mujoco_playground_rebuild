@@ -11,3 +11,4 @@ wandb/
 rscope/
 trash/
 .vscode/
+rscope_ssh.sh
