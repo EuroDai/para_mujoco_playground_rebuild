@@ -77,7 +77,7 @@ def brax_ppo_config(
         policy_hidden_layer_sizes=(512, 256, 128),
         value_hidden_layer_sizes=(512, 256, 128),
         policy_obs_key="state",
-        value_obs_key="state",
+        value_obs_key="privileged_state",
     )
   else:
     raise ValueError(f"Unsupported env: {env_name}")

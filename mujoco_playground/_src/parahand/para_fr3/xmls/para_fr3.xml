@@ -69,13 +69,13 @@
     <option gravity="0 0 -9.81" />
     <keyframe>
         <key name="home" 
-            qpos="-0.03 -1.0 1.47 -0.563 1.37 1.0
+            qpos="-0.03 -1.57 1.47 -0.563 1.37 0.0
                 0 0 0 0
                 0 0 0 0
                 0 0 0 0
                 0 0 0 0
                 0 0 0 0 
-                -0.58 -0.25 0.03 1 0 0 0" 
+                -0.50 -0.25 0.03 1 0 0 0" 
             qvel="0 0 0 0 0 0
                 0 0 0 0 
                 0 0 0 0
@@ -83,7 +83,7 @@
                 0 0 0 0
                 0 0 0 0
                 0 0 0 0 0 0" 
-            ctrl="-0.03 -1.0 1.47 -0.563 1.37 1.0
+            ctrl="-0.03 -1.57 1.47 -0.563 1.37 0.0
                 0 0 0 0 
                 0 0 0.0285
                 0 0 0.0285
@@ -119,9 +119,9 @@
                     <body name="forearm_link" pos="-0.28 0 0" euler="0 0 0">
                         <joint class="fr3" name="j3" range="-2.8274 2.8274" />
                         <inertial pos="-0.18987 5.2268E-06 0.0034145" mass="2.2312" fullinertia="0.0028852 0.0035145 0.0029186 7.3389E-07 -3.5373E-05 -2.8527E-07" />
-                        <geom pos="-0.1499 0 0" zaxis="1 0 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0899" group="0" contype="128" conaffinity="4193312" />
-                        <geom pos="-0.24 0 0.00182" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.05118" group="0" contype="2" conaffinity="3932672"/>
-                        <geom pos="-0.007505 0 0.0069" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="box" size="0.0525 0.047 0.045" group="0" contype="64" conaffinity="3670032"/>
+                        <geom pos="-0.007505 0 0.0069" zaxis="0 1 0" rgba="0.89804 0.91765 0.92941 1" type="box" size="0.0525 0.047 0.045" group="0" contype="128" conaffinity="4193312"/>
+                        <geom pos="-0.1499 0 0" zaxis="1 0 0" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.0899" group="0" contype="2" conaffinity="3932672"/>
+                        <geom pos="-0.24 0 0.00182" zaxis="0 0 1" rgba="0.89804 0.91765 0.92941 1" type="capsule" size="0.04 0.05118" group="0" contype="64" conaffinity="3670032"/>
                         
                         <body name="wrist1_link" pos="-0.24001 0 0" euler="0 0 0">
                             <joint class="fr3" name="j4" range="-4.6251 1.4835" />
@@ -272,7 +272,7 @@
                 </body>
             </body>
         </body>
-        <body name="cube" pos="-0.58 -0.25 0.03" quat="0 0 0 1" childclass="cube">
+        <body name="cube" pos="-0.5 -0.25 0.03" quat="0 0 0 1" childclass="cube">
             <freejoint name="cube_freejoint" />
             <!-- <geom name="cube" type="capsule" zaxis="0 1 0" size="0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" solimp="0.95 0.99 0.001" contype="2097152" conaffinity="2097151"/> -->
             <geom name="cube" type="box" pos="0 0 0" size="0.03 0.03 0.03" rgba="0 1 0 1" density="500" condim="4" solref="0.02 1" contype="2097152" conaffinity="2097151"/>
