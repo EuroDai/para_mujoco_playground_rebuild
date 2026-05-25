@@ -160,30 +160,6 @@ class ParaFR3Env(mjx_env.MjxEnv):
 
     return jp.stack(contacts)
 
-  def get_adjacent_fingertip_contact_force_norms(
-      self,
-      data: mjx.Data,
-      contact_data: Optional[tuple[jax.Array, jax.Array, jax.Array, jax.Array]] = None,
-  ) -> jax.Array:
-    if contact_data is None:
-      contact_data = self._get_contact_data(data)
-    geom1, geom2, valid, contact_force_vec = contact_data
-
-    contacts = []
-    for name1, name2 in zip(consts.FINGERTIP_TIPS[:-1], consts.FINGERTIP_TIPS[1:]):
-      tip1_geom_id = self.mj_model.geom(name1).id
-      tip2_geom_id = self.mj_model.geom(name2).id
-      tip_tip_contact = valid & (
-          ((geom1 == tip1_geom_id) & (geom2 == tip2_geom_id))
-          | ((geom1 == tip2_geom_id) & (geom2 == tip1_geom_id))
-      )
-      pair_force = jp.sum(
-          jp.where(tip_tip_contact[:, None], contact_force_vec, 0.0), axis=0
-      )
-      contacts.append(jp.linalg.norm(pair_force))
-
-    return jp.stack(contacts)
-
   def has_geom_floor_contact(
       self,
       data: mjx.Data,

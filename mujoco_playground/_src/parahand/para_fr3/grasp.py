@@ -71,6 +71,10 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         self._arm_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.ARM_JOINTS])
         self._hand_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.HAND_JOINTS])
         self._finger_tendon_act_ids = np.array([self._mj_model.actuator(n).id for n in consts.FINGER_TENDONS])
+        self._index_swing_act_id = self._mj_model.actuator("index_swing").id
+        self._middle_swing_act_id = self._mj_model.actuator("middle_swing").id
+        self._ring_swing_act_id = self._mj_model.actuator("ring_swing").id
+        self._little_swing_act_id = self._mj_model.actuator("little_swing").id
         self._finger_tendon_ids = np.array([self._mj_model.tendon(n).id for n in consts.FINGER_TENDONS])
         self._all_joint_ids = np.array([self._mj_model.joint(n).id for n in consts.ALL_JOINTS])
         self._joint_lowers = self._mj_model.jnt_range[self._all_joint_ids, 0]
@@ -200,15 +204,45 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         ctrl = ctrl.at[self._hand_act_ids].add(delta_hand)
         ctrl = ctrl.at[self._finger_tendon_act_ids].add(delta_tendons)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
+
+        middle_swing_lower = jp.maximum(
+            ctrl[self._index_swing_act_id],
+            self._lowers[self._middle_swing_act_id],
+        )
+        middle_swing_upper = jp.minimum(
+            ctrl[self._little_swing_act_id],
+            self._uppers[self._middle_swing_act_id],
+        )
+        ctrl = ctrl.at[self._middle_swing_act_id].set(
+            jp.clip(
+                ctrl[self._middle_swing_act_id],
+                middle_swing_lower,
+                middle_swing_upper,
+            )
+        )
+
+        ring_swing_lower = jp.maximum(
+            ctrl[self._middle_swing_act_id],
+            self._lowers[self._ring_swing_act_id],
+        )
+        ring_swing_upper = jp.minimum(
+            ctrl[self._little_swing_act_id],
+            self._uppers[self._ring_swing_act_id],
+        )
+        ctrl = ctrl.at[self._ring_swing_act_id].set(
+            jp.clip(
+                ctrl[self._ring_swing_act_id],
+                ring_swing_lower,
+                ring_swing_upper,
+            )
+        )
+
         data = mjx_env.step(
             self.mjx_model, state.data, ctrl, self.n_substeps
         )
         
         contact_data = self._get_contact_data(data)
         fingertip_force = self.get_fingertip_cube_contact(data, contact_data)
-        adjacent_tip_force_norms = self.get_adjacent_fingertip_contact_force_norms(
-            data, contact_data
-        )
         arm_floor_collision = self.has_geom_floor_contact(
             data, ("forearm_collision_1", "wrist2_collision_2"), contact_data
         )
@@ -217,7 +251,6 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         done = self._get_termination(
             data,
             state.info,
-            adjacent_tip_force_norms=adjacent_tip_force_norms,
             arm_floor_collision=arm_floor_collision,
         )
 
@@ -428,7 +461,6 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         self,
         data: mjx.Data,
         info: dict,
-        adjacent_tip_force_norms: Optional[jax.Array] = None,
         arm_floor_collision: Optional[jax.Array] = None,
     ) -> jax.Array:
         del info
@@ -442,10 +474,6 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         abnormal_arm = jp.any(jp.abs(data.qvel[self._arm_dqids]) > self._config.v_limit_arm)
         abnormal_hand = jp.any(jp.abs(data.qvel[self._all_hand_dqids]) > self._config.v_limit_hand)
         abnormal_robot = abnormal_arm | abnormal_hand
-
-        if adjacent_tip_force_norms is None:
-            adjacent_tip_force_norms = self.get_adjacent_fingertip_contact_force_norms(data)
-        adjacent_tip_collision = jp.any(adjacent_tip_force_norms > 0.05)
 
         if arm_floor_collision is None:
             arm_floor_collision = self.has_geom_floor_contact(
@@ -461,7 +489,6 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         return (
             object_out_of_bound
             | abnormal_robot
-            | adjacent_tip_collision
             | arm_floor_collision
             | nans
         )

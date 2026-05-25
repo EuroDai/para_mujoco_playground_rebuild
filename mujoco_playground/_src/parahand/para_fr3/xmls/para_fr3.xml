@@ -14,7 +14,7 @@
             <geom contype="0" conaffinity="0" group="2" density="1" />
         </default>
         <default class="tip">
-            <geom zaxis="1 0 0" type="capsule" size="0.008 0.006" pos="0.022 0 0" rgba="1 1 .6 1" density="1000" friction="1 0.2 0.01" />
+            <geom zaxis="1 0 0" type="capsule" size="0.008 0.006" pos="0.022 0 0" rgba="1 1 .6 1" density="1000" friction="1 0.005 0.0001" />
         </default>
 		<default class="tac">
             <geom zaxis="1 0 0" type="capsule" size="0.006 0.003" pos="0.026 0.006 0" rgba="0 1 0 0.3" density="1000" friction="1 0.2 0.01" />
@@ -164,7 +164,7 @@
                                                 </body>
                                             </body>
                                             <body name="index_link_0" pos="0.03040 0 0.14156" euler="1.57 0 3.14">
-                                                <joint name="index_swing" axis="0 0 1." class="swing_joint" range="-0.52 0.26"/>
+                                                <joint name="index_swing" axis="0 0 1." class="swing_joint" range="-0.52 0"/>
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="index_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="index_joint_0" axis="0 0 1" class="finger_joint" />
@@ -239,7 +239,7 @@
                                                 </body>
                                             </body>
                                             <body name="little_link_0" pos="-0.0393 0 0.13806" euler="1.57 0 3.14">
-                                                <joint name="little_swing" axis="0 0 1" class="swing_joint" range="-0.26 0.52"/>
+                                                <joint name="little_swing" axis="0 0 1" class="swing_joint" range="0 0.52"/>
                                                 <geom type="box" pos="0 0 0.01" size="0.001 0.001 0.002" class="visual" />
                                                 <body name="little_link_1" pos="0 -0.0225000 0.014000" euler="1.57 -1.57 0">
                                                     <joint name="little_joint_0" axis="0 0 1" class="finger_joint" />
