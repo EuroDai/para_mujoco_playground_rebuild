@@ -27,8 +27,8 @@ def default_config() -> config_dict.ConfigDict:
         v_limit_arm=6.4,
         v_limit_hand=10,
         impl='warp', # 默认用warp，
-        naconmax=30 * 4096, 
-        # naccdmax=240*8192, 
+        naconmax=30 * 4096,
+        # naccdmax=240*8192,
         njmax=1500,
         history_len=2,
         reward_config=config_dict.create(
@@ -47,6 +47,7 @@ def default_config() -> config_dict.ConfigDict:
         pointcloud_pool_points = 256,
     )
     return config
+
 
 class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
     def __init__(
@@ -108,33 +109,93 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             box_geom_name="cube",
         )
 
+    def _apply_swing_ctrl_constraints(self, ctrl: jax.Array) -> jax.Array:
+        middle_swing_lower = jp.maximum(
+            ctrl[self._index_swing_act_id],
+            self._lowers[self._middle_swing_act_id],
+        )
+        middle_swing_upper = jp.minimum(
+            ctrl[self._little_swing_act_id],
+            self._uppers[self._middle_swing_act_id],
+        )
+        ctrl = ctrl.at[self._middle_swing_act_id].set(
+            jp.clip(
+                ctrl[self._middle_swing_act_id],
+                middle_swing_lower,
+                middle_swing_upper,
+            )
+        )
+
+        ring_swing_lower = jp.maximum(
+            ctrl[self._middle_swing_act_id],
+            self._lowers[self._ring_swing_act_id],
+        )
+        ring_swing_upper = jp.minimum(
+            ctrl[self._little_swing_act_id],
+            self._uppers[self._ring_swing_act_id],
+        )
+        ctrl = ctrl.at[self._ring_swing_act_id].set(
+            jp.clip(
+                ctrl[self._ring_swing_act_id],
+                ring_swing_lower,
+                ring_swing_upper,
+            )
+        )
+        return ctrl
+
 
     def reset(self, rng: jax.Array) -> State:
-        rng, q_rng, ctrl_rng, cube_rng = jax.random.split(rng, 4)
+        (
+            rng,
+            arm_q_rng,
+            arm_ctrl_rng,
+            hand_ctrl_rng,
+            tendon_ctrl_rng,
+            cube_pos_rng,
+            cube_quat_rng,
+        ) = jax.random.split(rng, 7)
 
-        arm_q_noise = jax.random.normal(q_rng, (len(self._arm_qids),))
+        arm_q_noise = jax.random.normal(arm_q_rng, (len(self._arm_qids),))
         q_robot = self._default_pose.at[:len(self._arm_qids)].add(0.05 * arm_q_noise)
-        q_robot = jp.clip(q_robot, self._joint_lowers, self._joint_uppers)
 
-        arm_ctrl_noise = jax.random.normal(ctrl_rng, (len(self._arm_act_ids),))
+        arm_ctrl_noise = jax.random.normal(arm_ctrl_rng, (len(self._arm_act_ids),))
         ctrl = self._init_ctrl.at[self._arm_act_ids].add(0.05 * arm_ctrl_noise)
+        hand_ctrl = jax.random.uniform(
+            hand_ctrl_rng,
+            (len(self._hand_act_ids),),
+            minval=self._lowers[self._hand_act_ids],
+            maxval=self._uppers[self._hand_act_ids],
+        )
+        tendon_ctrl = jax.random.uniform(
+            tendon_ctrl_rng,
+            (len(self._finger_tendon_act_ids),),
+            minval=self._lowers[self._finger_tendon_act_ids],
+            maxval=self._uppers[self._finger_tendon_act_ids],
+        )
+        ctrl = ctrl.at[self._hand_act_ids].set(hand_ctrl)
+        ctrl = ctrl.at[self._finger_tendon_act_ids].set(tendon_ctrl)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
+        ctrl = self._apply_swing_ctrl_constraints(ctrl)
 
+        q_robot = q_robot.at[
+            len(self._arm_qids):len(self._arm_qids) + len(self._hand_qids)
+        ].set(ctrl[self._hand_act_ids])
+        q_robot = jp.clip(q_robot, self._joint_lowers, self._joint_uppers)
 
         q_cube = self._default_cube_pose.copy()
         q_cube = q_cube.at[:3].set(
             self._default_cube_pose[:3]
             + jax.random.uniform(
-                cube_rng,
+                cube_pos_rng,
                 (3,),
                 minval=jp.array([-0.1, -0.1, 0.0]),
                 maxval=jp.array([0.1, 0.1, 0.0]),
             )
         )
 
-        q_cube = q_cube.at[3:].set(para_fr3_base.uniform_quat(q_rng))
+        q_cube = q_cube.at[3:].set(para_fr3_base.uniform_quat(cube_quat_rng))
         # q_cube = self._default_cube_pose.copy()
-        
+
         q = jp.concatenate([q_robot, q_cube])
 
         data = mjx_env.make_data(
@@ -145,6 +206,14 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
             impl=self._mjx_model.impl.value,
             naconmax=self._config.naconmax,
             njmax=self._config.njmax,
+        )
+
+        settle_steps = 10
+        data = jax.lax.fori_loop(
+            0,
+            settle_steps,
+            lambda _, d: mjx_env.step(self.mjx_model, d, ctrl, self.n_substeps),
+            data,
         )
         reward, done = jp.zeros(2)
         metrics = {}
@@ -195,9 +264,10 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         arm_n = len(self._arm_act_ids)
         hand_n = len(self._hand_act_ids)
         tendon_n = len(self._finger_tendon_act_ids)
-        delta_arm = action[:arm_n] * self._config.action_scale_arm
-        delta_hand = action[arm_n:arm_n+hand_n] * self._config.action_scale_hand
-        delta_tendons = action[arm_n+hand_n:arm_n+hand_n+tendon_n] * self._config.action_scale_tendon
+        effective_action = action
+        delta_arm = effective_action[:arm_n] * self._config.action_scale_arm
+        delta_hand = effective_action[arm_n:arm_n+hand_n] * self._config.action_scale_hand
+        delta_tendons = effective_action[arm_n+hand_n:arm_n+hand_n+tendon_n] * self._config.action_scale_tendon
 
         ctrl = state.data.ctrl
         ctrl = ctrl.at[self._arm_act_ids].add(delta_arm)
@@ -205,37 +275,7 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         ctrl = ctrl.at[self._finger_tendon_act_ids].add(delta_tendons)
         ctrl = jp.clip(ctrl, self._lowers, self._uppers)
 
-        middle_swing_lower = jp.maximum(
-            ctrl[self._index_swing_act_id],
-            self._lowers[self._middle_swing_act_id],
-        )
-        middle_swing_upper = jp.minimum(
-            ctrl[self._little_swing_act_id],
-            self._uppers[self._middle_swing_act_id],
-        )
-        ctrl = ctrl.at[self._middle_swing_act_id].set(
-            jp.clip(
-                ctrl[self._middle_swing_act_id],
-                middle_swing_lower,
-                middle_swing_upper,
-            )
-        )
-
-        ring_swing_lower = jp.maximum(
-            ctrl[self._middle_swing_act_id],
-            self._lowers[self._ring_swing_act_id],
-        )
-        ring_swing_upper = jp.minimum(
-            ctrl[self._little_swing_act_id],
-            self._uppers[self._ring_swing_act_id],
-        )
-        ctrl = ctrl.at[self._ring_swing_act_id].set(
-            jp.clip(
-                ctrl[self._ring_swing_act_id],
-                ring_swing_lower,
-                ring_swing_upper,
-            )
-        )
+        ctrl = self._apply_swing_ctrl_constraints(ctrl)
 
         data = mjx_env.step(
             self.mjx_model, state.data, ctrl, self.n_substeps
@@ -270,7 +310,7 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
 
         def _normal_rewards(_):
             rewards = self._get_reward(
-                data, action, state.info, state.metrics, done, fingertip_force
+                data, effective_action, state.info, state.metrics, done, fingertip_force
             )
             return {
                 k: v * self._config.reward_config.scales[k] for k, v in rewards.items()
@@ -293,7 +333,7 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
 
         for name, a in zip(
             consts.ARM_JOINTS + consts.HAND_JOINTS + consts.FINGER_TENDONS,
-            action,
+            effective_action,
         ):
             metrics[f"action/{name}"] = a
 
@@ -302,8 +342,8 @@ class ParaFR3Grasp(para_fr3_base.ParaFR3Env):
         info["step"] = info["step"] + 1
         info["last_act"] = jp.where(
             done > 0,
-            jp.zeros_like(action),
-            action,
+            jp.zeros_like(effective_action),
+            effective_action,
         )
         info["obs_history"] = jp.where(
             done > 0,
